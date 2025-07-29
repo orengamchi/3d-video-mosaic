@@ -68,10 +68,6 @@
         padding: 5px;
         font-family: system-ui, sans-serif;
     }
-    select:disabled, input:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
     select option { background: #333; color: white; }
     .hidden {
         opacity: 0;
@@ -84,14 +80,35 @@
   <video id="video" autoplay playsinline muted></video>
   
   <div id="controls" class="control-panel hidable">
-    <label for="densitySlider">צפיפות</label>
-    <input type="range" id="densitySlider" min="5" max="35" value="28">
+    <label for="modeSelect">מצב:</label>
+    <select id="modeSelect">
+        <option value="video">וידאו</option>
+        <option value="text">טקסט</option>
+    </select>
+    
+    <div id="text-controls" style="display: none;">
+      <input type="text" id="textInput" value="שלום עולם" placeholder="הקלד כאן...">
+    </div>
+
+    <label for="densitySlider">צפיפות:</label>
+    <input type="range" id="densitySlider" min="5" max="35" value="25">
+
+    <label for="filterSelect">פילטר:</label>
+    <select id="filterSelect">
+        <option value="none">ללא</option>
+        <option value="grayscale">שחור-לבן</option>
+        <option value="sepia">ספיה</option>
+        <option value="invert">היפוך צבע</option>
+        <option value="cool">קר</option>
+        <option value="warm">חם</option>
+        <option value="yellow">צהוב</option>
+    </select>
 
     <label for="shapeSelect">צורה:</label>
     <select id="shapeSelect">
         <option value="box">קובייה</option>
         <option value="sphere">כדור</option>
-        <option value="hexagon" selected>משושה</option>
+        <option value="hexagon">משושה</option>
         <option value="nail">מסמר</option>
         <option value="cone">חרוט</option>
         <option value="torus">טורוס</option>
@@ -99,129 +116,68 @@
 
     <label for="materialSelect">חומר:</label>
     <select id="materialSelect">
-        <option value="regular">רגיל</option>
-        <option value="mirror" selected>מראה</option>
-        <option value="neon">ניאון</option>
+        <option value="matte">מט</option>
+        <option value="mirror">מראה</option>
+        <option value="led">לד (זוהר)</option>
     </select>
     
     <label for="forceSlider">עוצמת תזוזה:</label>
-    <input type="range" id="forceSlider" min="1" max="25" value="10" step="0.5">
+    <input type="range" id="forceSlider" min="1" max="25" value="8" step="0.5">
 
     <label for="depthSlider">עומק:</label>
-    <input type="range" id="depthSlider" min="0.1" max="50" value="5" step="0.5">
+    <input type="range" id="depthSlider" min="0.1" max="50" value="15" step="0.5">
   </div>
   <button id="camera-switch" class="control-panel hidable" title="החלף מצלמה">🔄</button>
 
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/"
-      }
-    }
-  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
 
-  <script type="module">
-    import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
-    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-    import { BufferGeometryUtils } from 'three/addons/utils/BufferGeometryUtils.js';
-    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-    import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
-    import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-    import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
-    import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
-
+  <script>
     let GRID_DENSITY = 20, MOTION_THRESHOLD = 20, EXPLOSION_FORCE = 8, SHAPE_DEPTH = 15;
     const RESTORE_SPEED = 0.03, DAMPING = 0.90;
     const ROTATION_FORCE = 0.2, ROTATIONAL_DAMPING = 0.95;
 
     const video = document.getElementById('video'), cameraSwitchBtn = document.getElementById('camera-switch'),
-          densitySlider = document.getElementById('densitySlider'),
+          densitySlider = document.getElementById('densitySlider'), filterSelect = document.getElementById('filterSelect'),
           shapeSelect = document.getElementById('shapeSelect'), forceSlider = document.getElementById('forceSlider'),
           depthSlider = document.getElementById('depthSlider'), materialSelect = document.getElementById('materialSelect'), 
-          hidableControls = document.querySelectorAll('.hidable');
+          modeSelect = document.getElementById('modeSelect'), textControls = document.getElementById('text-controls'), 
+          textInput = document.getElementById('textInput'), hidableControls = document.querySelectorAll('.hidable');
     
     const offscreenCanvas = document.createElement('canvas');
     const offscreenCtx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
-    const maskCanvas = document.createElement('canvas');
-    const maskCtx = maskCanvas.getContext('2d', { willReadFrequently: true });
 
-    let shapes = [], prevFrameData = null, currentFacingMode = 'environment', currentStream,
-        currentShape = 'hexagon', hideControlsTimeout, worldWidth, worldHeight,
-        currentMaterial = 'mirror';
-    let latestMaskData = null;
+    let shapes = [], prevFrameData = null, currentFacingMode = 'environment', currentStream, currentFilter = 'none',
+        currentShape = 'box', hideControlsTimeout, worldWidth, worldHeight,
+        currentMode = 'video', currentMaterial = 'matte';
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.domElement.id = 'three-canvas';
     document.body.appendChild(renderer.domElement);
 
-    const controls = new OrbitControls(camera, renderer.domElement);
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
     camera.position.z = 400;
-    controls.minPolarAngle = (90 - 35) * Math.PI / 180;
-    controls.maxPolarAngle = (90 + 35) * Math.PI / 180;
     controls.update();
 
-    const composer = new EffectComposer(renderer);
-    const renderPass = new RenderPass(scene, camera);
-    composer.addPass(renderPass);
-
-    const outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
-    outlinePass.edgeStrength = 5;
-    outlinePass.edgeGlow = 1;
-    outlinePass.edgeThickness = 2;
-    outlinePass.pulsePeriod = 0;
-    outlinePass.usePatternTexture = false;
-    outlinePass.visibleEdgeColor.set('#ffffff');
-    outlinePass.hiddenEdgeColor.set('#190a05');
-    composer.addPass(outlinePass);
-
-    const effectFXAA = new ShaderPass(FXAAShader);
-    effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
-    composer.addPass(effectFXAA);
-
-    const pmremGenerator = new THREE.PMREMGenerator(renderer);
-    pmremGenerator.compileEquirectangularShader();
-    new RGBELoader()
-        .setDataType(THREE.UnsignedByteType)
-        .load('https://threejs.org/examples/textures/equirectangular/venice_sunset_1k.hdr', (texture) => {
-            const envMap = pmremGenerator.fromEquirectangular(texture).texture;
-            scene.environment = envMap;
-            texture.dispose();
-            pmremGenerator.dispose();
-        });
-
-    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
-    directionalLight.position.set(100, 150, 300);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(50, 150, 300);
     directionalLight.castShadow = true;
     directionalLight.shadow.mapSize.width = 1024;
     directionalLight.shadow.mapSize.height = 1024;
     scene.add(directionalLight);
-    
-    const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
-    directionalLight2.position.set(-100, -150, -200);
-    scene.add(directionalLight2);
 
     const shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.ShadowMaterial({ opacity: 0.3 }));
     shadowPlane.position.z = -100;
     shadowPlane.receiveShadow = true;
     scene.add(shadowPlane);
-
-    const selfieSegmentation = new SelfieSegmentation({locateFile: (file) => {
-      return `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`;
-    }});
-    selfieSegmentation.setOptions({ modelSelection: 1 });
-    selfieSegmentation.onResults(onResults);
 
     async function setupCamera(facingMode) {
       if (currentStream) currentStream.getTracks().forEach(track => track.stop());
@@ -232,7 +188,6 @@
           video.play();
           GRID_DENSITY = 40 - parseInt(densitySlider.value);
           resizeAndInit();
-          sendToMediaPipe();
         };
       } catch (e) {
         if (facingMode === 'environment') setupCamera('user');
@@ -240,42 +195,30 @@
       }
     }
 
-    async function sendToMediaPipe() {
-        if (video.readyState >= 2) {
-            await selfieSegmentation.send({image: video});
-        }
-        requestAnimationFrame(sendToMediaPipe);
-    }
-
-    function onResults(results) {
-        maskCtx.save();
-        maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
-        maskCtx.drawImage(results.segmentationMask, 0, 0, maskCanvas.width, maskCanvas.height);
-        
-        if (currentFacingMode === 'user') {
-            maskCtx.translate(maskCanvas.width, 0);
-            maskCtx.scale(-1, 1);
-            maskCtx.drawImage(maskCanvas, 0, 0);
-        }
-        maskCtx.restore();
-        latestMaskData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height).data;
-    }
-
     cameraSwitchBtn.addEventListener('click', () => {
       currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
       setupCamera(currentFacingMode);
     });
     densitySlider.addEventListener('input', () => { GRID_DENSITY = 40 - parseInt(densitySlider.value); resizeAndInit(); });
-    shapeSelect.addEventListener('change', (e) => { 
-        currentShape = e.target.value;
-        depthSlider.disabled = currentShape === 'diamond' || currentShape === 'sphere' || currentShape === 'torus';
-        resizeAndInit(); 
-    });
+    filterSelect.addEventListener('change', (e) => currentFilter = e.target.value);
+    shapeSelect.addEventListener('change', (e) => { currentShape = e.target.value; resizeAndInit(); });
     forceSlider.addEventListener('input', (e) => EXPLOSION_FORCE = parseFloat(e.target.value));
     depthSlider.addEventListener('input', (e) => { SHAPE_DEPTH = parseFloat(e.target.value); resizeAndInit(); });
     materialSelect.addEventListener('change', (e) => { currentMaterial = e.target.value; resizeAndInit(); });
-    
+    modeSelect.addEventListener('change', (e) => {
+        currentMode = e.target.value;
+        textControls.style.display = currentMode === 'text' ? 'flex' : 'none';
+        resizeAndInit();
+    });
+    textInput.addEventListener('input', () => { if(currentMode === 'text') resizeAndInit(); });
+
     function showAndResetTimer(e) {
+        if (currentMode === 'text' && e.target.id === 'three-canvas') {
+            shapes.forEach(shape => {
+                shape.userData.velocity.add(new THREE.Vector3((Math.random()-0.5)*25, (Math.random()-0.5)*25, (Math.random()-0.5)*25));
+                shape.userData.rotationalVelocity.add(new THREE.Vector3((Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE));
+            });
+        }
         hidableControls.forEach(c => c.classList.remove('hidden'));
         clearTimeout(hideControlsTimeout);
         hideControlsTimeout = setTimeout(() => hidableControls.forEach(c => c.classList.add('hidden')), 5000);
@@ -292,61 +235,39 @@
         worldWidth = 500;
         worldHeight = worldWidth / aspectRatio;
       }
-      maskCanvas.width = Math.round(worldWidth / GRID_DENSITY);
-      maskCanvas.height = Math.round(worldHeight / GRID_DENSITY);
-      offscreenCanvas.width = maskCanvas.width;
-      offscreenCanvas.height = maskCanvas.height;
       initShapes();
     }
 
     function createGeometry() {
         const size = GRID_DENSITY * 0.9;
-        const depth = SHAPE_DEPTH;
         switch(currentShape) {
             case 'sphere': return new THREE.SphereGeometry(size / 2, 16, 12);
-            case 'cone': 
-                const coneGeo = new THREE.ConeGeometry(size / 2, size * 1.5, 20);
-                coneGeo.rotateX(Math.PI / 2);
-                return coneGeo;
+            case 'cone': return new THREE.ConeGeometry(size / 2, size * 1.5, 20);
             case 'torus': return new THREE.TorusGeometry(size * 0.3, size * 0.15, 16, 24);
             case 'hexagon':
-                const hexGeo = new THREE.CylinderGeometry(size / 2, size / 2, depth, 6);
+                const hexGeo = new THREE.CylinderGeometry(size / 2, size / 2, SHAPE_DEPTH, 6);
                 hexGeo.rotateX(Math.PI / 2);
                 return hexGeo;
-            case 'diamond':
-                return new THREE.OctahedronGeometry(size * 0.6, 0);
             case 'nail':
-                const head = new THREE.CylinderGeometry(size * 0.4, size * 0.4, depth * 0.1, 12);
-                head.translate(0, depth * 0.5, 0);
-                const shaft = new THREE.CylinderGeometry(size * 0.1, size * 0.1, depth, 12);
-                const nailGeo = BufferGeometryUtils.mergeBufferGeometries([head, shaft]);
+                const head = new THREE.CylinderGeometry(size * 0.4, size * 0.4, SHAPE_DEPTH * 0.1, 12);
+                head.translate(0, SHAPE_DEPTH * 0.5, 0);
+                const shaft = new THREE.CylinderGeometry(size * 0.1, size * 0.1, SHAPE_DEPTH, 12);
+                const nailGeo = THREE.BufferGeometryUtils.mergeBufferGeometries([head, shaft]);
                 nailGeo.rotateX(Math.PI / 2);
                 return nailGeo;
-            case 'box': default: return new THREE.BoxGeometry(size, size, depth);
+            case 'box': default: return new THREE.BoxGeometry(size, size, SHAPE_DEPTH);
         }
     }
 
     function createMaterial() {
         switch(currentMaterial) {
             case 'mirror':
-                return new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.05, metalness: 1.0 });
-            case 'glass':
-                return new THREE.MeshPhysicalMaterial({
-                    metalness: 0,
-                    roughness: 0,
-                    transmission: 0.3,
-                    ior: 1.52,
-                    thickness: 1.5,
-                    specularIntensity: 1,
-                    reflectivity: 0.8,
-                    clearcoat: 1,
-                    clearcoatRoughness: 0.1
-                });
-            case 'neon':
-                return new THREE.MeshBasicMaterial({ color: 0x000000 });
-            case 'regular':
+                return new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1, metalness: 0.9 });
+            case 'led':
+                return new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0.2, emissive: 0xffffff });
+            case 'matte':
             default:
-                return new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, metalness: 0.3 });
+                return new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7, metalness: 0.1 });
         }
     }
     
@@ -356,44 +277,70 @@
         const geometry = createGeometry();
         let positions = [];
 
-        const isHexGrid = currentShape === 'hexagon';
-        const gridW = Math.round(worldWidth / GRID_DENSITY);
-        const gridH = Math.round(worldHeight / GRID_DENSITY);
+        if (currentMode === 'video') {
+            const isHexGrid = currentShape === 'hexagon';
+            const gridW = Math.round(worldWidth / GRID_DENSITY);
+            const gridH = Math.round(worldHeight / GRID_DENSITY);
+            offscreenCanvas.width = gridW;
+            offscreenCanvas.height = gridH;
 
-        for (let y = 0; y < gridH; y++) {
-            for (let x = 0; x < gridW; x++) {
-                let originX, originY;
-                let initialRotation = new THREE.Quaternion();
-                if (isHexGrid) {
-                    const hexWidth = GRID_DENSITY;
-                    const hexHeight = (Math.sqrt(3) / 2) * hexWidth;
-                    originX = (x * hexWidth) - (worldWidth / 2);
-                    if (y % 2 !== 0) { originX += hexWidth / 2; }
-                    originY = -(y * hexHeight) + (worldHeight / 2);
-                } else {
-                    originX = (x * GRID_DENSITY) - (worldWidth / 2);
-                    originY = -(y * GRID_DENSITY) + (worldHeight / 2);
+            for (let y = 0; y < gridH; y++) {
+                for (let x = 0; x < gridW; x++) {
+                    let originX, originY;
+                    if (isHexGrid) {
+                        const hexWidth = GRID_DENSITY;
+                        const hexHeight = (Math.sqrt(3) / 2) * hexWidth;
+                        originX = (x * hexWidth) - (worldWidth / 2);
+                        if (y % 2 !== 0) { originX += hexWidth / 2; }
+                        originY = -(y * hexHeight) + (worldHeight / 2);
+                    } else {
+                        originX = (x * GRID_DENSITY) - (worldWidth / 2);
+                        originY = -(y * GRID_DENSITY) + (worldHeight / 2);
+                    }
+                    positions.push(new THREE.Vector3(originX, originY, 0));
                 }
-                positions.push({pos: new THREE.Vector3(originX, originY, 0), rot: initialRotation});
+            }
+        } else { // Text mode
+            const text = textInput.value || " ";
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const fontSize = 150;
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            const textMetrics = ctx.measureText(text);
+            canvas.width = textMetrics.width + 20;
+            canvas.height = fontSize * 1.5;
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+            
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const sampling = Math.max(2, Math.round(GRID_DENSITY / 3));
+
+            for (let y = 0; y < canvas.height; y += sampling) {
+                for (let x = 0; x < canvas.width; x += sampling) {
+                    const alpha = imageData.data[(y * canvas.width + x) * 4 + 3];
+                    if (alpha > 128) {
+                        const originX = (x - canvas.width / 2) * 2.5;
+                        const originY = -(y - canvas.height / 2) * 2.5;
+                        positions.push(new THREE.Vector3(originX, originY, 0));
+                    }
+                }
             }
         }
-        
-        createMeshes(geometry, positions);
-    }
 
-    function createMeshes(geometry, positions) {
-        positions.forEach((p) => {
+        positions.forEach(pos => {
             const material = createMaterial();
             const shape = new THREE.Mesh(geometry, material);
             shape.castShadow = true;
             shape.receiveShadow = true;
-            shape.position.copy(p.pos);
-            shape.quaternion.copy(p.rot);
+            shape.position.copy(pos);
             shape.userData = { 
-                originPosition: p.pos.clone(), 
+                originPosition: pos.clone(), 
                 velocity: new THREE.Vector3(0, 0, 0),
                 rotationalVelocity: new THREE.Vector3(0, 0, 0),
-                originalQuaternion: p.rot.clone()
+                originalQuaternion: shape.quaternion.clone()
             };
             shapes.push(shape);
             scene.add(shape);
@@ -405,17 +352,27 @@
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
-        composer.setSize(window.innerWidth, window.innerHeight);
-        effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
         resizeAndInit();
     });
 
+    function applyFilter(r, g, b) {
+        switch (currentFilter) {
+            case 'grayscale': const avg = (r*0.299 + g*0.587 + b*0.114); return {r:avg, g:avg, b:avg};
+            case 'sepia': return {r:Math.min(255,r*0.393+g*0.769+b*0.189), g:Math.min(255,r*0.349+g*0.686+b*0.168), b:Math.min(255,r*0.272+g*0.534+b*0.131)};
+            case 'invert': return {r:255-r, g:255-g, b:255-b};
+            case 'cool': return {r:r, g:g, b:Math.min(255,b+50)};
+            case 'warm': return {r:Math.min(255,r+50), g:g, b:b};
+            case 'yellow': return {r: Math.min(255, (r+g)/1.5), g: Math.min(255, (r+g)/2), b: b*0.5};
+            default: return {r,g,b};
+        }
+    }
+
     function animationLoop() {
       requestAnimationFrame(animationLoop);
-      if (video.readyState >= 4) { updateVideoState(); }
+      if (video.readyState >= 4 && currentMode === 'video') { updateVideoState(); }
       updatePhysics();
       controls.update();
-      composer.render();
+      renderer.render(scene, camera);
     }
     
     function updatePhysics() {
@@ -434,39 +391,37 @@
     }
 
     function updateVideoState() {
+      offscreenCtx.save();
+      if (currentFacingMode === 'user') {
+        offscreenCtx.scale(-1, 1);
+        offscreenCtx.translate(-offscreenCanvas.width, 0);
+      }
       offscreenCtx.drawImage(video, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
+      offscreenCtx.restore();
+
       const currentFrameData = offscreenCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height).data;
 
-      if (latestMaskData && prevFrameData && prevFrameData.length === currentFrameData.length) {
+      if (prevFrameData && prevFrameData.length === currentFrameData.length) {
         for (let i = 0; i < shapes.length; i++) {
           const shape = shapes[i];
           if (!shape) continue;
-          
-          const maskIndex = i * 4;
-          const isForeground = latestMaskData[maskIndex] > 128;
-          shape.visible = isForeground;
+          const dataIndex = i * 4;
 
-          if (isForeground) {
-              const r_orig = currentFrameData[maskIndex], g_orig = currentFrameData[maskIndex+1], b_orig = currentFrameData[maskIndex+2];
-              const color = new THREE.Color(r_orig / 255, g_orig / 255, b_orig / 255);
-              
-              if (currentMaterial === 'neon') {
-                  outlinePass.selectedObjects = shapes.filter(s => s.visible);
-                  outlinePass.visibleEdgeColor.copy(color);
-              } else {
-                  outlinePass.selectedObjects = [];
-                  shape.material.color = color;
-                  if (shape.material.emissive) {
-                      shape.material.emissive.setHex(0x000000);
-                  }
-              }
+          const r_orig = currentFrameData[dataIndex], g_orig = currentFrameData[dataIndex+1], b_orig = currentFrameData[dataIndex+2];
+          const filteredColor = applyFilter(r_orig, g_orig, b_orig);
+          const color = new THREE.Color(filteredColor.r / 255, filteredColor.g / 255, filteredColor.b / 255);
+          shape.material.color = color;
+          if (currentMaterial === 'led') {
+              shape.material.emissive = color;
+          } else {
+              shape.material.emissive = new THREE.Color(0x000000);
+          }
 
-              const diff = Math.abs(r_orig - prevFrameData[maskIndex]) + Math.abs(g_orig - prevFrameData[maskIndex+1]) + Math.abs(b_orig - prevFrameData[maskIndex+2]);
+          const diff = Math.abs(r_orig - prevFrameData[dataIndex]) + Math.abs(g_orig - prevFrameData[dataIndex+1]) + Math.abs(b_orig - prevFrameData[dataIndex+2]);
 
-              if (diff > MOTION_THRESHOLD) {
-                shape.userData.velocity.add(new THREE.Vector3((Math.random()-0.5)*EXPLOSION_FORCE, (Math.random()-0.5)*EXPLOSION_FORCE, (Math.random()-0.5)*EXPLOSION_FORCE));
-                shape.userData.rotationalVelocity.add(new THREE.Vector3((Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE));
-              }
+          if (diff > MOTION_THRESHOLD) {
+            shape.userData.velocity.add(new THREE.Vector3((Math.random()-0.5)*EXPLOSION_FORCE, (Math.random()-0.5)*EXPLOSION_FORCE, (Math.random()-0.5)*EXPLOSION_FORCE));
+            shape.userData.rotationalVelocity.add(new THREE.Vector3((Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE));
           }
         }
       }

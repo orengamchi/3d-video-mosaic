@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>פסיפס וידאו תלת-ממדי</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      overflow: hidden;
+      background: #000;
+      touch-action: none;
+      user-select: none;
+      font-family: system-ui, sans-serif;
+    }
+    #three-canvas, video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    video { z-index: 1; opacity: 0; }
+    #three-canvas { z-index: 2; background: #000; }
+    .control-panel {
+      position: fixed;
+      top: 20px;
+      z-index: 10;
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(8px);
+      padding: 10px 15px;
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+    }
+    #controls {
+      left: 50%;
+      transform: translateX(-50%);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    #camera-switch {
+      left: 20px;
+      width: 50px;
+      height: 50px;
+      padding: 0;
+      justify-content: center;
+      font-size: 24px;
+      cursor: pointer;
+      border-radius: 50%;
+    }
+    #camera-switch:active { background: rgba(0, 0, 0, 0.5); }
+    label { font-weight: 500; }
+    input, select { 
+        cursor: pointer;
+        background: rgba(255,255,255,0.1);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.3);
+        border-radius: 5px;
+        padding: 5px;
+        font-family: system-ui, sans-serif;
+    }
+    select option { background: #333; color: white; }
+    .hidden {
+        opacity: 0;
+        transform: translateY(-100px);
+        pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <video id="video" autoplay playsinline muted></video>
+  
+  <div id="controls" class="control-panel hidable">
+    <label for="modeSelect">מצב:</label>
+    <select id="modeSelect">
+        <option value="video">וידאו</option>
+        <option value="text">טקסט</option>
+    </select>
+    
+    <div id="text-controls" style="display: none;">
+      <input type="text" id="textInput" value="שלום עולם" placeholder="הקלד כאן...">
+    </div>
+
+    <label for="densitySlider">צפיפות:</label>
+    <input type="range" id="densitySlider" min="5" max="35" value="25">
+
+    <label for="filterSelect">פילטר:</label>
+    <select id="filterSelect">
+        <option value="none">ללא</option>
+        <option value="grayscale">שחור-לבן</option>
+        <option value="sepia">ספיה</option>
+        <option value="invert">היפוך צבע</option>
+        <option value="cool">קר</option>
+        <option value="warm">חם</option>
+        <option value="yellow">צהוב</option>
+    </select>
+
+    <label for="shapeSelect">צורה:</label>
+    <select id="shapeSelect">
+        <option value="box">קובייה</option>
+        <option value="sphere">כדור</option>
+        <option value="hexagon">משושה</option>
+        <option value="nail">מסמר</option>
+        <option value="cone">חרוט</option>
+        <option value="torus">טורוס</option>
+    </select>
+
+    <label for="materialSelect">חומר:</label>
+    <select id="materialSelect">
+        <option value="matte">מט</option>
+        <option value="mirror">מראה</option>
+        <option value="led">לד (זוהר)</option>
+    </select>
+    
+    <label for="forceSlider">עוצמת תזוזה:</label>
+    <input type="range" id="forceSlider" min="1" max="25" value="8" step="0.5">
+
+    <label for="depthSlider">עומק:</label>
+    <input type="range" id="depthSlider" min="0.1" max="50" value="15" step="0.5">
+  </div>
+  <button id="camera-switch" class="control-panel hidable" title="החלף מצלמה">🔄</button>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
+
+  <script>
+    let GRID_DENSITY = 20, MOTION_THRESHOLD = 20, EXPLOSION_FORCE = 8, SHAPE_DEPTH = 15;
+    const RESTORE_SPEED = 0.03, DAMPING = 0.90;
+    const ROTATION_FORCE = 0.2, ROTATIONAL_DAMPING = 0.95;
+
+    const video = document.getElementById('video'), cameraSwitchBtn = document.getElementById('camera-switch'),
+          densitySlider = document.getElementById('densitySlider'), filterSelect = document.getElementById('filterSelect'),
+          shapeSelect = document.getElementById('shapeSelect'), forceSlider = document.getElementById('forceSlider'),
+          depthSlider = document.getElementById('depthSlider'), materialSelect = document.getElementById('materialSelect'), 
+          modeSelect = document.getElementById('modeSelect'), textControls = document.getElementById('text-controls'), 
+          textInput = document.getElementById('textInput'), hidableControls = document.querySelectorAll('.hidable');
+    
+    const offscreenCanvas = document.createElement('canvas');
+    const offscreenCtx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
+
+    let shapes = [], prevFrameData = null, currentFacingMode = 'environment', currentStream, currentFilter = 'none',
+        currentShape = 'box', hideControlsTimeout, worldWidth, worldHeight,
+        currentMode = 'video', currentMaterial = 'matte';
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.domElement.id = 'three-canvas';
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    camera.position.z = 400;
+    controls.update();
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(50, 150, 300);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.width = 1024;
+    directionalLight.shadow.mapSize.height = 1024;
+    scene.add(directionalLight);
+
+    const shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.ShadowMaterial({ opacity: 0.3 }));
+    shadowPlane.position.z = -100;
+    shadowPlane.receiveShadow = true;
+    scene.add(shadowPlane);
+
+    async function setupCamera(facingMode) {
+      if (currentStream) currentStream.getTracks().forEach(track => track.stop());
+      try {
+        currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } });
+        video.srcObject = currentStream;
+        video.onloadedmetadata = () => {
+          video.play();
+          GRID_DENSITY = 40 - parseInt(densitySlider.value);
+          resizeAndInit();
+        };
+      } catch (e) {
+        if (facingMode === 'environment') setupCamera('user');
+        else alert('לא ניתן לגשת למצלמה.');
+      }
+    }
+
+    cameraSwitchBtn.addEventListener('click', () => {
+      currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
+      setupCamera(currentFacingMode);
+    });
+    densitySlider.addEventListener('input', () => { GRID_DENSITY = 40 - parseInt(densitySlider.value); resizeAndInit(); });
+    filterSelect.addEventListener('change', (e) => currentFilter = e.target.value);
+    shapeSelect.addEventListener('change', (e) => { currentShape = e.target.value; resizeAndInit(); });
+    forceSlider.addEventListener('input', (e) => EXPLOSION_FORCE = parseFloat(e.target.value));
+    depthSlider.addEventListener('input', (e) => { SHAPE_DEPTH = parseFloat(e.target.value); resizeAndInit(); });
+    materialSelect.addEventListener('change', (e) => { currentMaterial = e.target.value; resizeAndInit(); });
+    modeSelect.addEventListener('change', (e) => {
+        currentMode = e.target.value;
+        textControls.style.display = currentMode === 'text' ? 'flex' : 'none';
+        resizeAndInit();
+    });
+    textInput.addEventListener('input', () => { if(currentMode === 'text') resizeAndInit(); });
+
+    function showAndResetTimer(e) {
+        if (currentMode === 'text' && e.target.id === 'three-canvas') {
+            shapes.forEach(shape => {
+                shape.userData.velocity.add(new THREE.Vector3((Math.random()-0.5)*25, (Math.random()-0.5)*25, (Math.random()-0.5)*25));
+                shape.userData.rotationalVelocity.add(new THREE.Vector3((Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE));
+            });
+        }
+        hidableControls.forEach(c => c.classList.remove('hidden'));
+        clearTimeout(hideControlsTimeout);
+        hideControlsTimeout = setTimeout(() => hidableControls.forEach(c => c.classList.add('hidden')), 5000);
+    }
+    window.addEventListener('pointerdown', showAndResetTimer);
+    window.addEventListener('pointermove', showAndResetTimer);
+    
+    function resizeAndInit() {
+      const aspectRatio = video.videoWidth / video.videoHeight || 16/9;
+      if (window.innerWidth / window.innerHeight > aspectRatio) {
+        worldHeight = 500;
+        worldWidth = worldHeight * aspectRatio;
+      } else {
+        worldWidth = 500;
+        worldHeight = worldWidth / aspectRatio;
+      }
+      initShapes();
+    }
+
+    function createGeometry() {
+        const size = GRID_DENSITY * 0.9;
+        switch(currentShape) {
+            case 'sphere': return new THREE.SphereGeometry(size / 2, 16, 12);
+            case 'cone': return new THREE.ConeGeometry(size / 2, size * 1.5, 20);
+            case 'torus': return new THREE.TorusGeometry(size * 0.3, size * 0.15, 16, 24);
+            case 'hexagon':
+                const hexGeo = new THREE.CylinderGeometry(size / 2, size / 2, SHAPE_DEPTH, 6);
+                hexGeo.rotateX(Math.PI / 2);
+                return hexGeo;
+            case 'nail':
+                const head = new THREE.CylinderGeometry(size * 0.4, size * 0.4, SHAPE_DEPTH * 0.1, 12);
+                head.translate(0, SHAPE_DEPTH * 0.5, 0);
+                const shaft = new THREE.CylinderGeometry(size * 0.1, size * 0.1, SHAPE_DEPTH, 12);
+                const nailGeo = THREE.BufferGeometryUtils.mergeBufferGeometries([head, shaft]);
+                nailGeo.rotateX(Math.PI / 2);
+                return nailGeo;
+            case 'box': default: return new THREE.BoxGeometry(size, size, SHAPE_DEPTH);
+        }
+    }
+
+    function createMaterial() {
+        switch(currentMaterial) {
+            case 'mirror':
+                return new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1, metalness: 0.9 });
+            case 'led':
+                return new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0.2, emissive: 0xffffff });
+            case 'matte':
+            default:
+                return new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7, metalness: 0.1 });
+        }
+    }
+    
+    function initShapes() {
+        shapes.forEach(s => { scene.remove(s); s.geometry.dispose(); s.material.dispose(); });
+        shapes = [];
+        const geometry = createGeometry();
+        let positions = [];
+
+        if (currentMode === 'video') {
+            const isHexGrid = currentShape === 'hexagon';
+            const gridW = Math.round(worldWidth / GRID_DENSITY);
+            const gridH = Math.round(worldHeight / GRID_DENSITY);
+            offscreenCanvas.width = gridW;
+            offscreenCanvas.height = gridH;
+
+            for (let y = 0; y < gridH; y++) {
+                for (let x = 0; x < gridW; x++) {
+                    let originX, originY;
+                    if (isHexGrid) {
+                        const hexWidth = GRID_DENSITY;
+                        const hexHeight = (Math.sqrt(3) / 2) * hexWidth;
+                        originX = (x * hexWidth) - (worldWidth / 2);
+                        if (y % 2 !== 0) { originX += hexWidth / 2; }
+                        originY = -(y * hexHeight) + (worldHeight / 2);
+                    } else {
+                        originX = (x * GRID_DENSITY) - (worldWidth / 2);
+                        originY = -(y * GRID_DENSITY) + (worldHeight / 2);
+                    }
+                    positions.push(new THREE.Vector3(originX, originY, 0));
+                }
+            }
+        } else { // Text mode
+            const text = textInput.value || " ";
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const fontSize = 150;
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            const textMetrics = ctx.measureText(text);
+            canvas.width = textMetrics.width + 20;
+            canvas.height = fontSize * 1.5;
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+            
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const sampling = Math.max(2, Math.round(GRID_DENSITY / 3));
+
+            for (let y = 0; y < canvas.height; y += sampling) {
+                for (let x = 0; x < canvas.width; x += sampling) {
+                    const alpha = imageData.data[(y * canvas.width + x) * 4 + 3];
+                    if (alpha > 128) {
+                        const originX = (x - canvas.width / 2) * 2.5;
+                        const originY = -(y - canvas.height / 2) * 2.5;
+                        positions.push(new THREE.Vector3(originX, originY, 0));
+                    }
+                }
+            }
+        }
+
+        positions.forEach(pos => {
+            const material = createMaterial();
+            const shape = new THREE.Mesh(geometry, material);
+            shape.castShadow = true;
+            shape.receiveShadow = true;
+            shape.position.copy(pos);
+            shape.userData = { 
+                originPosition: pos.clone(), 
+                velocity: new THREE.Vector3(0, 0, 0),
+                rotationalVelocity: new THREE.Vector3(0, 0, 0),
+                originalQuaternion: shape.quaternion.clone()
+            };
+            shapes.push(shape);
+            scene.add(shape);
+        });
+        prevFrameData = null;
+    }
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        resizeAndInit();
+    });
+
+    function applyFilter(r, g, b) {
+        switch (currentFilter) {
+            case 'grayscale': const avg = (r*0.299 + g*0.587 + b*0.114); return {r:avg, g:avg, b:avg};
+            case 'sepia': return {r:Math.min(255,r*0.393+g*0.769+b*0.189), g:Math.min(255,r*0.349+g*0.686+b*0.168), b:Math.min(255,r*0.272+g*0.534+b*0.131)};
+            case 'invert': return {r:255-r, g:255-g, b:255-b};
+            case 'cool': return {r:r, g:g, b:Math.min(255,b+50)};
+            case 'warm': return {r:Math.min(255,r+50), g:g, b:b};
+            case 'yellow': return {r: Math.min(255, (r+g)/1.5), g: Math.min(255, (r+g)/2), b: b*0.5};
+            default: return {r,g,b};
+        }
+    }
+
+    function animationLoop() {
+      requestAnimationFrame(animationLoop);
+      if (video.readyState >= 4 && currentMode === 'video') { updateVideoState(); }
+      updatePhysics();
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    
+    function updatePhysics() {
+        for (let i = 0; i < shapes.length; i++) {
+            const shape = shapes[i];
+            const restoreForce = shape.userData.originPosition.clone().sub(shape.position).multiplyScalar(RESTORE_SPEED);
+            shape.userData.velocity.add(restoreForce);
+            shape.userData.velocity.multiplyScalar(DAMPING);
+            shape.position.add(shape.userData.velocity);
+            
+            const deltaRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(shape.userData.rotationalVelocity.x, shape.userData.rotationalVelocity.y, shape.userData.rotationalVelocity.z));
+            shape.quaternion.multiplyQuaternions(deltaRotation, shape.quaternion);
+            shape.quaternion.slerp(shape.userData.originalQuaternion, RESTORE_SPEED * 2);
+            shape.userData.rotationalVelocity.multiplyScalar(ROTATIONAL_DAMPING);
+        }
+    }
+
+    function updateVideoState() {
+      offscreenCtx.save();
+      if (currentFacingMode === 'user') {
+        offscreenCtx.scale(-1, 1);
+        offscreenCtx.translate(-offscreenCanvas.width, 0);
+      }
+      offscreenCtx.drawImage(video, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
+      offscreenCtx.restore();
+
+      const currentFrameData = offscreenCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height).data;
+
+      if (prevFrameData && prevFrameData.length === currentFrameData.length) {
+        for (let i = 0; i < shapes.length; i++) {
+          const shape = shapes[i];
+          if (!shape) continue;
+          const dataIndex = i * 4;
+
+          const r_orig = currentFrameData[dataIndex], g_orig = currentFrameData[dataIndex+1], b_orig = currentFrameData[dataIndex+2];
+          const filteredColor = applyFilter(r_orig, g_orig, b_orig);
+          const color = new THREE.Color(filteredColor.r / 255, filteredColor.g / 255, filteredColor.b / 255);
+          shape.material.color = color;
+          if (currentMaterial === 'led') {
+              shape.material.emissive = color;
+          } else {
+              shape.material.emissive = new THREE.Color(0x000000);
+          }
+
+          const diff = Math.abs(r_orig - prevFrameData[dataIndex]) + Math.abs(g_orig - prevFrameData[dataIndex+1]) + Math.abs(b_orig - prevFrameData[dataIndex+2]);
+
+          if (diff > MOTION_THRESHOLD) {
+            shape.userData.velocity.add(new THREE.Vector3((Math.random()-0.5)*EXPLOSION_FORCE, (Math.random()-0.5)*EXPLOSION_FORCE, (Math.random()-0.5)*EXPLOSION_FORCE));
+            shape.userData.rotationalVelocity.add(new THREE.Vector3((Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE));
+          }
+        }
+      }
+      prevFrameData = currentFrameData;
+    }
+
+    setupCamera(currentFacingMode);
+    showAndResetTimer({target: {id: ''}});
+    animationLoop();
+  </script>
+</body>
+</html>

@@ -14,8 +14,8 @@
       height: 100vh;
       overflow: hidden;
       background: #000;
-      touch-action: none;
-      user-select: none;
+      touch-action: none; /* Disable touch actions like pinch-zoom */
+      user-select: none; /* Disable text selection */
       font-family: system-ui, sans-serif;
     }
     /* Canvas and video positioning */
@@ -26,15 +26,10 @@
       width: 100%;
       height: 100%;
     }
-    video { 
-        z-index: 1; 
-        opacity: 0;
-        /* Flip the video element for a mirror effect on the front camera */
-        transform: scaleX(-1);
-    }
-    #three-canvas { z-index: 2; background: transparent; }
+    video { z-index: 1; opacity: 0; /* Hidden but accessible for processing */ }
+    #three-canvas { z-index: 2; background: #000; }
     
-    /* Control panel base styling */
+    /* Control panel styling */
     .control-panel {
       position: fixed;
       z-index: 10;
@@ -43,59 +38,33 @@
       padding: 10px 15px;
       border-radius: 15px;
       display: flex;
+      gap: 15px;
       color: white;
       border: 1px solid rgba(255, 255, 255, 0.2);
-      transition: opacity 0.5s ease-in-out, transform 0.3s ease-in-out;
     }
-    
-    /* Desktop Controls Panel */
+    /* Minimalist vertical layout for the main controls */
     #controls {
       top: 20px;
       right: 20px;
       flex-direction: column;
       align-items: stretch;
-      width: 240px;
+      width: 240px; /* Increased width for new controls */
       gap: 12px;
-      padding-top: 30px;
     }
-
-    /* Shared button styling */
-    .icon-button {
-      width: 50px;
-      height: 50px;
-      padding: 0;
-      justify-content: center;
-      align-items: center;
-      font-size: 24px;
-      cursor: pointer;
-      border-radius: 50%;
-    }
-    .icon-button:active { background: rgba(0, 0, 0, 0.5); }
 
     #camera-switch {
       top: 20px;
       left: 20px;
+      width: 50px;
+      height: 50px;
+      padding: 0;
+      justify-content: center;
+      font-size: 24px;
+      cursor: pointer;
+      border-radius: 50%;
     }
+    #camera-switch:active { background: rgba(0, 0, 0, 0.5); }
     
-    /* Hide icon button (desktop) */
-    #hide-icon-btn {
-        position: absolute;
-        top: 8px;
-        left: 8px;
-        width: 24px;
-        height: 24px;
-        background: rgba(0,0,0,0.4);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        font-size: 20px;
-        line-height: 24px;
-        font-weight: bold;
-    }
-    #hide-icon-btn:hover { background: rgba(255,255,255,0.3); }
-
     /* Form element styling */
     label { font-weight: 500; margin-left: 5px; }
     input, select, button.control-button { 
@@ -104,18 +73,38 @@
         color: white;
         border: 1px solid rgba(255,255,255,0.3);
         border-radius: 5px;
-        padding: 8px;
+        padding: 5px;
         font-family: system-ui, sans-serif;
         width: 100%;
-        box-sizing: border-box;
     }
-    button.control-button.active {
-        background: rgba(80, 150, 255, 0.5);
-        border-color: rgba(80, 150, 255, 0.8);
-    }
+    select option { background: #333; color: white; }
     
-    .control-item-col { display: flex; flex-direction: column; gap: 5px; }
-    hr { border: none; border-top: 1px solid rgba(255, 255, 255, 0.2); width: 100%; margin: 5px 0; }
+    /* Styling for individual control items */
+    .control-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+    .control-item-col {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    .control-item input[type="range"] {
+        flex-grow: 1;
+        margin-right: 10px;
+    }
+    .control-item select {
+        flex-grow: 1;
+        margin-right: 10px;
+    }
+    hr {
+        border: none;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+        width: 100%;
+        margin: 5px 0;
+    }
     
     #signature {
         position: fixed;
@@ -125,60 +114,26 @@
         color: rgba(255, 255, 255, 0.5);
         font-size: 16px;
         z-index: 10;
+        pointer-events: none; /* Make it non-interactive */
+    }
+
+    /* Class to hide controls */
+    .hidable {
+        opacity: 1;
+        transition: opacity 0.5s ease-in-out;
+    }
+    .hidden {
+        opacity: 0 !important;
         pointer-events: none;
-    }
-
-    .hidable { opacity: 1; }
-    .hidden { opacity: 0 !important; pointer-events: none; }
-
-    #loading-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.7); color: white; z-index: 999;
-        display: flex; justify-content: center; align-items: center;
-        font-size: 1.5em; backdrop-filter: blur(5px);
-    }
-
-    /* --- Mobile Specific Styles --- */
-    #menu-toggle { display: none; }
-
-    @media (max-width: 768px) {
-        #controls {
-            width: 260px;
-            height: 100%;
-            top: 0;
-            right: 0;
-            border-radius: 0;
-            transform: translateX(100%);
-            justify-content: center;
-        }
-        #controls.is-open {
-            transform: translateX(0);
-        }
-        #hide-icon-btn { display: none; } /* Hide desktop 'x' */
-
-        #menu-toggle {
-            display: flex; /* Show hamburger */
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-        }
-        #camera-switch {
-            top: auto;
-            left: 20px;
-            bottom: 20px;
-        }
-        #signature {
-            bottom: 80px; /* Move up to avoid buttons */
-        }
     }
   </style>
 </head>
 <body>
-  <div id="loading-overlay" class="hidden"><div>טוען מודל בינה מלאכותית...</div></div>
+  <!-- Video element to capture camera stream -->
   <video id="video" autoplay playsinline muted></video>
  
+  <!-- Main control panel for effects -->
   <div id="controls" class="control-panel hidable">
-    <div id="hide-icon-btn" title="הסתר תפריט">×</div>
     <div class="control-item-col">
         <label for="densitySlider">צפיפות:</label>
         <input type="range" id="densitySlider" min="5" max="35" value="25">
@@ -203,64 +158,81 @@
         <input type="range" id="depthSlider" min="0.1" max="50" value="15" step="0.5">
     </div>
     <hr>
-    <button id="selfieModeBtn" class="control-button">👤 מצב סלפי</button>
+     <div class="control-item-col">
+        <label for="colorModeSelect">מצב צבע:</label>
+        <select id="colorModeSelect">
+            <option value="normal">רגיל</option>
+            <option value="grayscale">גווני אפור</option>
+            <option value="invert">היפוך צבעים</option>
+            <option value="psychedelic">פסיכדלי</option>
+        </select>
+    </div>
+    <div class="control-item-col">
+        <label for="backgroundSelect">רקע:</label>
+        <select id="backgroundSelect">
+            <option value="grid">רצפת רשת</option>
+            <option value="black">שחור</option>
+            <option value="stars">שדה כוכבים</option>
+        </select>
+    </div>
+    <hr>
+    <button id="snapshotBtn" class="control-button">📷 צלם תמונה</button>
+    <button id="hideControlsBtn" class="control-button">הסתר תפריט</button>
   </div>
   
-  <button id="camera-switch" class="control-panel hidable icon-button" title="החלף מצלמה">🔄</button>
-  <button id="menu-toggle" class="control-panel hidable icon-button" title="פתח תפריט">☰</button>
+  <!-- Button to switch between front and back cameras -->
+  <button id="camera-switch" class="control-panel hidable" title="החלף מצלמה">🔄</button>
+
   <div id="signature" class="hidable">BY Oren Gamchi</div>
 
   <!-- Third-party libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
+
 
   <script>
     // --- Global constants and variables ---
     let GRID_DENSITY = 20, MOTION_THRESHOLD = 20, EXPLOSION_FORCE = 8, SHAPE_DEPTH = 15;
-    const SEGMENTATION_THRESHOLD = 0.95; // Highest sensitivity, hardcoded
     const RESTORE_SPEED = 0.03, DAMPING = 0.90;
     const ROTATION_FORCE = 0.2, ROTATIONAL_DAMPING = 0.95;
 
     // DOM element references
-    const video = document.getElementById('video'), 
-          cameraSwitchBtn = document.getElementById('camera-switch'),
-          controlsPanel = document.getElementById('controls'),
+    const video = document.getElementById('video'), cameraSwitchBtn = document.getElementById('camera-switch'),
           densitySlider = document.getElementById('densitySlider'),
-          shapeSelect = document.getElementById('shapeSelect'), 
-          forceSlider = document.getElementById('forceSlider'),
+          shapeSelect = document.getElementById('shapeSelect'), forceSlider = document.getElementById('forceSlider'),
           depthSlider = document.getElementById('depthSlider'),
-          hideIconBtn = document.getElementById('hide-icon-btn'),
-          selfieModeBtn = document.getElementById('selfieModeBtn'),
-          menuToggleBtn = document.getElementById('menu-toggle'),
-          loadingOverlay = document.getElementById('loading-overlay');
+          colorModeSelect = document.getElementById('colorModeSelect'),
+          backgroundSelect = document.getElementById('backgroundSelect'),
+          snapshotBtn = document.getElementById('snapshotBtn'),
+          hideControlsBtn = document.getElementById('hideControlsBtn');
    
-    // Canvases for video processing
+    // Offscreen canvas for video processing
     const offscreenCanvas = document.createElement('canvas');
     const offscreenCtx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
-    const segmentationCanvas = document.createElement('canvas');
-    const segmentationCtx = segmentationCanvas.getContext('2d', { willReadFrequently: true });
 
     // State variables
     let shapes = [], prevFrameData = null, currentFacingMode = 'environment', currentStream,
-        currentShape = 'box', hideControlsTimeout, worldWidth, worldHeight, grid,
-        isSelfieMode = false, selfieSegmenter, isModelReady = false,
-        isVideoProcessingLoopRunning = false;
+        currentShape = 'box', currentColorMode = 'normal', currentBackground = 'grid',
+        hideControlsTimeout, worldWidth, worldHeight, grid, stars;
 
     // --- Three.js setup ---
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+   
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
     renderer.domElement.id = 'three-canvas';
     document.body.appendChild(renderer.domElement);
+
+    // Orbit controls for camera manipulation
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     camera.position.z = 400;
     controls.update();
+
+    // Lighting
     scene.add(new THREE.AmbientLight(0xffffff, 0.7));
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
     directionalLight.position.set(20, 20, 50);
@@ -269,13 +241,10 @@
     scene.add(camera);
 
     // --- Core functions ---
-    
-    function initializeSegmentation() {
-        selfieSegmenter = new SelfieSegmentation({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`});
-        selfieSegmenter.setOptions({ modelSelection: 0 }); 
-        selfieSegmenter.onResults(onSegmentationResults);
-    }
 
+    /**
+     * Creates the grid floor.
+     */
     function createFloor() {
         grid = new THREE.GridHelper(1000, 100, 0xffffff, 0xffffff);
         grid.material.opacity = 0.3;
@@ -283,11 +252,36 @@
         scene.add(grid);
     }
 
-    function updateBackground() {
-        grid.visible = !isSelfieMode;
-        renderer.setClearAlpha(isSelfieMode ? 0 : 1);
+    /**
+     * Creates a starfield background.
+     */
+    function createStarfield() {
+        const starVertices = [];
+        for (let i = 0; i < 10000; i++) {
+            const x = THREE.MathUtils.randFloatSpread(2000);
+            const y = THREE.MathUtils.randFloatSpread(2000);
+            const z = THREE.MathUtils.randFloatSpread(2000);
+            starVertices.push(x, y, z);
+        }
+        const starGeometry = new THREE.BufferGeometry();
+        starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+        const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.7 });
+        stars = new THREE.Points(starGeometry, starMaterial);
+        scene.add(stars);
     }
 
+    /**
+     * Updates the background based on selection.
+     */
+    function updateBackground() {
+        grid.visible = (currentBackground === 'grid');
+        stars.visible = (currentBackground === 'stars');
+    }
+
+    /**
+     * Sets up the camera stream.
+     * @param {string} facingMode - 'user' for front camera, 'environment' for back camera.
+     */
     async function setupCamera(facingMode) {
       if (currentStream) currentStream.getTracks().forEach(track => track.stop());
       try {
@@ -297,10 +291,6 @@
           video.play();
           GRID_DENSITY = 40 - parseInt(densitySlider.value);
           resizeAndInit();
-          if (!isVideoProcessingLoopRunning) {
-              isVideoProcessingLoopRunning = true;
-              videoProcessingLoop();
-          }
         };
       } catch (e) {
         if (facingMode === 'environment') setupCamera('user');
@@ -308,23 +298,41 @@
       }
     }
 
+    /**
+     * Hides all control elements.
+     */
     function hideControls() {
         document.querySelectorAll('.hidable').forEach(c => c.classList.add('hidden'));
     }
 
+    /**
+     * Shows the controls and resets the auto-hide timer.
+     */
     function showAndResetTimer() {
         document.querySelectorAll('.hidable').forEach(c => c.classList.remove('hidden'));
         clearTimeout(hideControlsTimeout);
         hideControlsTimeout = setTimeout(hideControls, 5000);
     }
 
+    /**
+     * Recalculates world dimensions based on video aspect ratio and re-initializes shapes.
+     */
     function resizeAndInit() {
       const aspectRatio = video.videoWidth / video.videoHeight || 16/9;
-      worldHeight = 500;
-      worldWidth = window.innerWidth > window.innerHeight ? worldHeight * aspectRatio : worldHeight / aspectRatio;
+      if (window.innerWidth / window.innerHeight > aspectRatio) {
+        worldHeight = 500;
+        worldWidth = worldHeight * aspectRatio;
+      } else {
+        worldWidth = 500;
+        worldHeight = worldWidth / aspectRatio;
+      }
       initShapes();
     }
 
+    /**
+     * Creates a geometry based on the current shape selection.
+     * @returns {THREE.BufferGeometry} The created geometry.
+     */
     function createGeometry() {
         const size = GRID_DENSITY * 0.9;
         switch(currentShape) {
@@ -346,6 +354,9 @@
         }
     }
    
+    /**
+     * Clears existing shapes and creates a new grid of shapes.
+     */
     function initShapes() {
         shapes.forEach(s => { scene.remove(s); s.geometry.dispose(); s.material.dispose(); });
         shapes = [];
@@ -355,24 +366,30 @@
         const borderSize = 10;
         const gridW = Math.round(worldWidth / GRID_DENSITY);
         const gridH = Math.round(worldHeight / GRID_DENSITY);
-        [offscreenCanvas.width, segmentationCanvas.width] = [gridW, gridW];
-        [offscreenCanvas.height, segmentationCanvas.height] = [gridH, gridH];
+        offscreenCanvas.width = gridW;
+        offscreenCanvas.height = gridH;
         
         const totalGridW = gridW + borderSize * 2;
         const totalGridH = gridH + borderSize * 2;
         const totalWorldWidth = totalGridW * GRID_DENSITY;
         const totalWorldHeight = totalGridH * GRID_DENSITY;
 
-        if (grid) grid.position.y = - (totalWorldHeight / 2) - 50;
+        if (grid) {
+            const floorY = - (totalWorldHeight / 2) - 50;
+            grid.position.y = floorY;
+        }
         
         for (let y = 0; y < totalGridH; y++) {
             for (let x = 0; x < totalGridW; x++) {
                 const isVideoShape = (x >= borderSize && x < gridW + borderSize && y >= borderSize && y < gridH + borderSize);
                 let originX, originY;
-                if (currentShape === 'hexagon') {
-                    const hexWidth = GRID_DENSITY, hexHeight = (Math.sqrt(3) / 2) * hexWidth;
+                const isHexGrid = currentShape === 'hexagon';
+
+                if (isHexGrid) {
+                    const hexWidth = GRID_DENSITY;
+                    const hexHeight = (Math.sqrt(3) / 2) * hexWidth;
                     originX = ((totalGridW - 1 - x) * hexWidth) - (totalWorldWidth / 2);
-                    if (y % 2 !== 0) originX += hexWidth / 2;
+                    if (y % 2 !== 0) { originX += hexWidth / 2; }
                     originY = -(y * hexHeight) + (totalWorldHeight / 2);
                 } else {
                     originX = ((totalGridW - 1 - x) * GRID_DENSITY) - (totalWorldWidth / 2);
@@ -380,7 +397,9 @@
                 }
                 
                 const shapeMaterial = material.clone();
-                if (!isVideoShape) shapeMaterial.color.set(0x1a1a1a);
+                if (!isVideoShape) {
+                    shapeMaterial.color.set(0x1a1a1a);
+                }
 
                 const shape = new THREE.Mesh(geometry, shapeMaterial);
                 shape.castShadow = true;
@@ -388,12 +407,18 @@
                 shape.position.set(originX, originY, 0);
                 shape.userData = { 
                     originPosition: shape.position.clone(), 
-                    velocity: new THREE.Vector3(), rotationalVelocity: new THREE.Vector3(),
-                    originalQuaternion: shape.quaternion.clone(), isVideoShape: isVideoShape
+                    velocity: new THREE.Vector3(0, 0, 0),
+                    rotationalVelocity: new THREE.Vector3(0, 0, 0),
+                    originalQuaternion: shape.quaternion.clone(),
+                    isVideoShape: isVideoShape
                 };
+
                 if (isVideoShape) {
-                    shape.userData.dataIndex = ((y - borderSize) * gridW + (x - borderSize)) * 4;
+                    const videoX = x - borderSize;
+                    const videoY = y - borderSize;
+                    shape.userData.dataIndex = (videoY * gridW + videoX) * 4;
                 }
+
                 shapes.push(shape);
                 scene.add(shape);
             }
@@ -401,113 +426,133 @@
         prevFrameData = null;
     }
 
+    /**
+     * The main animation loop.
+     */
     function animationLoop() {
       requestAnimationFrame(animationLoop);
       const time = Date.now() * 0.0005;
       
       if (grid && grid.visible) {
-        grid.material.color.setHSL(time % 1, 0.7, 0.5);
+        const color1 = new THREE.Color().setHSL(time % 1, 0.7, 0.5);
+        const color2 = new THREE.Color().setHSL((time + 0.2) % 1, 0.7, 0.5);
+        const colors = grid.geometry.attributes.color.array;
+        const divisions = 100;
+        const center = divisions / 2;
+        for (let i = 0, j = 0; i <= divisions; i++) {
+            const color = i === center ? color1 : color2;
+            color.toArray(colors, j); j += 3; color.toArray(colors, j); j += 3;
+        }
+        for (let i = 0, j = (divisions + 1) * 6; i <= divisions; i++) {
+            const color = i === center ? color1 : color2;
+            color.toArray(colors, j); j += 3; color.toArray(colors, j); j += 3;
+        }
+        grid.geometry.attributes.color.needsUpdate = true;
       }
       
+      if (stars && stars.visible) {
+          stars.rotation.x = time * 0.05;
+          stars.rotation.y = time * 0.05;
+      }
+
+      if (video.readyState >= 4) { 
+          updateVideoState(time); 
+      }
       updatePhysics();
       controls.update();
       renderer.render(scene, camera);
     }
    
+    /**
+     * Updates the physics for each shape (position and rotation).
+     */
     function updatePhysics() {
-        for (const shape of shapes) {
-            if (!shape.visible) continue;
-            shape.userData.velocity.add(shape.userData.originPosition.clone().sub(shape.position).multiplyScalar(RESTORE_SPEED));
+        for (let i = 0; i < shapes.length; i++) {
+            const shape = shapes[i];
+            const restoreForce = shape.userData.originPosition.clone().sub(shape.position).multiplyScalar(RESTORE_SPEED);
+            shape.userData.velocity.add(restoreForce);
             shape.userData.velocity.multiplyScalar(DAMPING);
             shape.position.add(shape.userData.velocity);
-            const deltaRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler().setFromVector3(shape.userData.rotationalVelocity));
+            const deltaRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(shape.userData.rotationalVelocity.x, shape.userData.rotationalVelocity.y, shape.userData.rotationalVelocity.z));
             shape.quaternion.multiplyQuaternions(deltaRotation, shape.quaternion);
             shape.quaternion.slerp(shape.userData.originalQuaternion, RESTORE_SPEED * 2);
             shape.userData.rotationalVelocity.multiplyScalar(ROTATIONAL_DAMPING);
         }
     }
-    
-    async function videoProcessingLoop() {
-        if (video.readyState >= 2) {
-            await selfieSegmenter.send({image: video});
+
+    /**
+     * Processes the video frame, detects motion, and updates shape colors and velocities.
+     * @param {number} time - The current animation time for psychedelic effects.
+     */
+    function updateVideoState(time) {
+      offscreenCtx.save();
+      if (currentFacingMode === 'user') {
+        offscreenCtx.scale(-1, 1);
+        offscreenCtx.translate(-offscreenCanvas.width, 0);
+      }
+      offscreenCtx.drawImage(video, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
+      offscreenCtx.restore();
+
+      const currentFrameData = offscreenCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height).data;
+
+      if (prevFrameData && prevFrameData.length === currentFrameData.length) {
+        for (let i = 0; i < shapes.length; i++) {
+          const shape = shapes[i];
+          if (!shape.userData.isVideoShape) continue;
+
+          const dataIndex = shape.userData.dataIndex;
+          let r = currentFrameData[dataIndex];
+          let g = currentFrameData[dataIndex + 1];
+          let b = currentFrameData[dataIndex + 2];
+
+          // Apply color modes
+          switch(currentColorMode) {
+              case 'grayscale':
+                  const avg = (r + g + b) / 3;
+                  r = g = b = avg;
+                  break;
+              case 'invert':
+                  r = 255 - r; g = 255 - g; b = 255 - b;
+                  break;
+              case 'psychedelic':
+                  const hue = (time + (dataIndex / 1000)) % 1;
+                  const tempColor = new THREE.Color().setHSL(hue, 1, 0.5);
+                  r = tempColor.r * 255; g = tempColor.g * 255; b = tempColor.b * 255;
+                  break;
+          }
+          shape.material.color.setRGB(r / 255, g / 255, b / 255);
+
+          const diff = Math.abs(r - prevFrameData[dataIndex]) + Math.abs(g - prevFrameData[dataIndex+1]) + Math.abs(b - prevFrameData[dataIndex+2]);
+          if (diff > MOTION_THRESHOLD) {
+            shape.userData.velocity.add(new THREE.Vector3(0, 0, -EXPLOSION_FORCE));
+            shape.userData.rotationalVelocity.add(new THREE.Vector3((Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE));
+          }
         }
-        requestAnimationFrame(videoProcessingLoop);
-    }
-
-    function onSegmentationResults(results) {
-        if (!isModelReady) {
-            isModelReady = true;
-            loadingOverlay.classList.add('hidden');
-        }
-        
-        offscreenCtx.drawImage(results.image, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
-        const currentFrameData = offscreenCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height).data;
-
-        if (isSelfieMode) {
-            shapes.forEach(s => { if(s.userData.isVideoShape) s.visible = false; });
-            segmentationCtx.drawImage(results.segmentationMask, 0, 0, segmentationCanvas.width, segmentationCanvas.height);
-            const maskData = segmentationCtx.getImageData(0, 0, segmentationCanvas.width, segmentationCanvas.height).data;
-
-            for (const shape of shapes) {
-                if (!shape.userData.isVideoShape) continue;
-                if (maskData[shape.userData.dataIndex] / 255 > SEGMENTATION_THRESHOLD) {
-                    shape.visible = true;
-                    updateShapeAppearance(shape, currentFrameData);
-                }
-            }
-        } else {
-            shapes.forEach(s => {
-                if(s.userData.isVideoShape) {
-                    s.visible = true;
-                    updateShapeAppearance(s, currentFrameData);
-                }
-            });
-        }
-        prevFrameData = currentFrameData;
-    }
-
-    function updateShapeAppearance(shape, frameData) {
-        let [r, g, b] = [frameData[shape.userData.dataIndex], frameData[shape.userData.dataIndex + 1], frameData[shape.userData.dataIndex + 2]];
-        shape.material.color.setRGB(r / 255, g / 255, b / 255);
-
-        if (prevFrameData) {
-            const diff = Math.abs(r - prevFrameData[shape.userData.dataIndex]) + Math.abs(g - prevFrameData[shape.userData.dataIndex+1]) + Math.abs(b - prevFrameData[shape.userData.dataIndex+2]);
-            if (diff > MOTION_THRESHOLD) {
-                shape.userData.velocity.add(new THREE.Vector3(0, 0, -EXPLOSION_FORCE));
-                shape.userData.rotationalVelocity.add(new THREE.Vector3((Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE));
-            }
-        }
+      }
+      prevFrameData = currentFrameData;
     }
 
     // --- Event Listeners ---
     cameraSwitchBtn.addEventListener('click', () => {
       currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
-      video.style.transform = (currentFacingMode === 'user') ? 'scaleX(-1)' : 'scaleX(1)';
       setupCamera(currentFacingMode);
-    });
-    selfieModeBtn.addEventListener('click', () => {
-        isSelfieMode = !isSelfieMode;
-        selfieModeBtn.classList.toggle('active', isSelfieMode);
-        if (!isModelReady) loadingOverlay.classList.remove('hidden');
-        shapes.forEach(s => { if(!s.userData.isVideoShape) s.visible = !isSelfieMode; });
-        updateBackground();
     });
     densitySlider.addEventListener('input', () => { GRID_DENSITY = 40 - parseInt(densitySlider.value); resizeAndInit(); });
     shapeSelect.addEventListener('change', (e) => { currentShape = e.target.value; resizeAndInit(); });
     forceSlider.addEventListener('input', (e) => EXPLOSION_FORCE = parseFloat(e.target.value));
     depthSlider.addEventListener('input', (e) => { SHAPE_DEPTH = parseFloat(e.target.value); resizeAndInit(); });
-    hideIconBtn.addEventListener('click', hideControls);
-    menuToggleBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        controlsPanel.classList.toggle('is-open');
+    colorModeSelect.addEventListener('change', (e) => currentColorMode = e.target.value);
+    backgroundSelect.addEventListener('change', (e) => {
+        currentBackground = e.target.value;
+        updateBackground();
     });
-    document.body.addEventListener('click', () => {
-        if (controlsPanel.classList.contains('is-open')) {
-            controlsPanel.classList.remove('is-open');
-        }
+    snapshotBtn.addEventListener('click', () => {
+        const link = document.createElement('a');
+        link.download = 'wowow-cam-snapshot.png';
+        link.href = renderer.domElement.toDataURL('image/png');
+        link.click();
     });
-    controlsPanel.addEventListener('click', (e) => e.stopPropagation());
-
+    hideControlsBtn.addEventListener('click', hideControls);
     window.addEventListener('pointerdown', showAndResetTimer);
     window.addEventListener('pointermove', showAndResetTimer);
     window.addEventListener('resize', () => {
@@ -518,8 +563,8 @@
     });
 
     // --- Initial setup ---
-    initializeSegmentation();
     createFloor();
+    createStarfield();
     updateBackground();
     setupCamera(currentFacingMode);
     showAndResetTimer();

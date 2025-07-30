@@ -33,25 +33,27 @@
     .control-panel {
       position: fixed;
       z-index: 10;
-      background: rgba(0, 0, 0, 0.3);
-      backdrop-filter: blur(8px);
-      padding: 10px 15px;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(10px);
+      padding: 10px;
       border-radius: 15px;
       display: flex;
       gap: 15px;
+      align-items: center;
       color: white;
       border: 1px solid rgba(255, 255, 255, 0.2);
     }
-    /* Minimalist vertical layout for the main controls */
+    
+    /* Main controls at the bottom-center */
     #controls {
-      top: 20px;
-      right: 20px;
-      flex-direction: column;
-      align-items: stretch;
-      width: 240px; /* Increased width for new controls */
-      gap: 12px;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      flex-direction: row;
+      padding: 10px 15px;
     }
 
+    /* Camera switch button styling */
     #camera-switch {
       top: 20px;
       left: 20px;
@@ -65,67 +67,117 @@
     }
     #camera-switch:active { background: rgba(0, 0, 0, 0.5); }
     
+    /* Controls container for toggling */
+    #main-controls {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: all 0.5s ease;
+    }
+
+    /* Hidden state for main controls */
+    #main-controls.hidden {
+        max-width: 0;
+        opacity: 0;
+        overflow: hidden;
+        padding: 0;
+        margin: 0;
+        gap: 0;
+    }
+
     /* Form element styling */
-    label { font-weight: 500; margin-left: 5px; }
-    input, select, button.control-button { 
+    label { font-weight: 500; margin-bottom: 4px; font-size: 14px; text-align: center;}
+    input, select, .control-button { 
         cursor: pointer;
         background: rgba(255,255,255,0.1);
         color: white;
         border: 1px solid rgba(255,255,255,0.3);
-        border-radius: 5px;
+        border-radius: 8px;
         padding: 5px;
         font-family: system-ui, sans-serif;
-        width: 100%;
     }
-    select option { background: #333; color: white; }
     
     /* Styling for individual control items */
-    .control-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
-    }
     .control-item-col {
         display: flex;
         flex-direction: column;
-        gap: 5px;
+        align-items: center;
     }
-    .control-item input[type="range"] {
-        flex-grow: 1;
-        margin-right: 10px;
-    }
-    .control-item select {
-        flex-grow: 1;
-        margin-right: 10px;
-    }
-    hr {
-        border: none;
-        border-top: 1px solid rgba(255, 255, 255, 0.2);
-        width: 100%;
-        margin: 5px 0;
-    }
-    
-    #signature {
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        color: rgba(255, 255, 255, 0.5);
-        font-size: 16px;
-        z-index: 10;
-        pointer-events: none; /* Make it non-interactive */
+    .control-item-col input[type="range"] {
+        width: 100px;
     }
 
-    /* Class to hide controls */
-    .hidable {
-        opacity: 1;
-        transition: opacity 0.5s ease-in-out;
+    #toggleControlsBtn {
+      font-size: 20px;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
     }
-    .hidden {
-        opacity: 0 !important;
+    
+    /* Shape Selector styles */
+    #shape-selector {
+        position: relative;
+    }
+    #shape-options {
+        display: flex;
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%) scale(0.9);
+        background: rgba(20, 20, 20, 0.7);
+        backdrop-filter: blur(10px);
+        padding: 8px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        gap: 8px;
+        margin-bottom: 10px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    #shape-selector.expanded #shape-options {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateX(-50%) scale(1);
+    }
+    .shape-btn {
+        padding: 8px;
+        background: transparent;
+        border: 1px solid transparent;
+        opacity: 0.7;
+    }
+    .shape-btn:hover {
+        opacity: 1;
+        background: rgba(255,255,255,0.1);
+    }
+    .shape-btn svg {
+        display: block;
+        width: 20px;
+        height: 20px;
+    }
+    #current-shape-btn {
+        padding: 8px;
+    }
+
+    /* --- New Signature Styles --- */
+    .signature {
+        position: fixed;
+        bottom: 10px;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 12px;
+        z-index: 9;
         pointer-events: none;
     }
+    #signature-left {
+        left: 15px;
+    }
+    #signature-right {
+        right: 15px;
+    }
+
   </style>
 </head>
 <body>
@@ -133,63 +185,69 @@
   <video id="video" autoplay playsinline muted></video>
  
   <!-- Main control panel for effects -->
-  <div id="controls" class="control-panel hidable">
-    <div class="control-item-col">
-        <label for="densitySlider">צפיפות:</label>
-        <input type="range" id="densitySlider" min="5" max="35" value="25">
+  <div id="controls" class="control-panel">
+    <div id="main-controls" class="hidden">
+        <div class="control-item-col">
+            <label for="densitySlider">צפיפות</label>
+            <input type="range" id="densitySlider" min="5" max="35" value="25" title="צפיפות">
+        </div>
+        
+        <div class="control-item-col">
+            <label>צורה</label>
+            <div id="shape-selector">
+                <button id="current-shape-btn" class="control-button" title="שנה צורה"></button>
+                <div id="shape-options">
+                    <button class="shape-btn control-button" data-shape="box" title="קובייה">
+                        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 4.5H19.5V19.5H4.5V4.5M6 6V18H18V6H6Z"></path></svg>
+                    </button>
+                    <button class="shape-btn control-button" data-shape="sphere" title="כדור">
+                        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 1 0 22 12A10 10 0 0 0 12 2Z"></path></svg>
+                    </button>
+                    <button class="shape-btn control-button" data-shape="hexagon" title="משושה">
+                        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M17.16 4.42L12 2L6.84 4.42L4.26 9.58L6.84 14.74L12 17.16L17.16 14.74L19.74 9.58L17.16 4.42Z"></path></svg>
+                    </button>
+                    <button class="shape-btn control-button" data-shape="nail" title="מסמר">
+                        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M13.6 2.6L12.19 4L13.6 5.41L14.21 4.79L15.62 6.2L14.21 7.61L15.62 9L14.21 10.41L15.62 11.82L14.21 13.24L15.62 14.65L14.21 16.06L15.62 17.47L12.83 20.27L11.41 18.85L18.41 11.85L13.6 7.03L11.41 9.22L10 7.81L11.41 6.39L10 4.97L11.41 3.56L10 2.15L11.41 0.73L13.6 2.6Z"></path></svg>
+                    </button>
+                    <button class="shape-btn control-button" data-shape="cone" title="חרוט">
+                        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2L4 22H20L12 2Z"></path></svg>
+                    </button>
+                    <button class="shape-btn control-button" data-shape="torus" title="טורוס">
+                        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 6A6 6 0 1 0 18 12A6 6 0 0 0 12 6M12 4A8 8 0 1 1 4 12A8 8 0 0 1 12 4Z"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-item-col">
+            <label for="forceSlider">תזוזה</label>
+            <input type="range" id="forceSlider" min="1" max="25" value="8" step="0.5" title="תזוזה">
+        </div>
+        <div class="control-item-col">
+            <label for="depthSlider">עומק</label>
+            <input type="range" id="depthSlider" min="0.1" max="50" value="15" step="0.5" title="עומק">
+        </div>
     </div>
-    <div class="control-item-col">
-        <label for="shapeSelect">צורה:</label>
-        <select id="shapeSelect">
-            <option value="box">קובייה</option>
-            <option value="sphere">כדור</option>
-            <option value="hexagon">משושה</option>
-            <option value="nail">מסמר</option>
-            <option value="cone">חרוט</option>
-            <option value="torus">טורוס</option>
-        </select>
-    </div>
-    <div class="control-item-col">
-        <label for="forceSlider">תזוזה:</label>
-        <input type="range" id="forceSlider" min="1" max="25" value="8" step="0.5">
-    </div>
-    <div class="control-item-col">
-        <label for="depthSlider">עומק:</label>
-        <input type="range" id="depthSlider" min="0.1" max="50" value="15" step="0.5">
-    </div>
-    <hr>
-     <div class="control-item-col">
-        <label for="colorModeSelect">מצב צבע:</label>
-        <select id="colorModeSelect">
-            <option value="normal">רגיל</option>
-            <option value="grayscale">גווני אפור</option>
-            <option value="invert">היפוך צבעים</option>
-            <option value="psychedelic">פסיכדלי</option>
-        </select>
-    </div>
-    <div class="control-item-col">
-        <label for="backgroundSelect">רקע:</label>
-        <select id="backgroundSelect">
-            <option value="grid">רצפת רשת</option>
-            <option value="black">שחור</option>
-            <option value="stars">שדה כוכבים</option>
-        </select>
-    </div>
-    <hr>
-    <button id="snapshotBtn" class="control-button">📷 צלם תמונה</button>
-    <button id="hideControlsBtn" class="control-button">הסתר תפריט</button>
+    <button id="toggleControlsBtn" class="control-button" title="הצג/הסתר תפריט">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+    </button>
   </div>
   
   <!-- Button to switch between front and back cameras -->
-  <button id="camera-switch" class="control-panel hidable" title="החלף מצלמה">🔄</button>
-
-  <div id="signature" class="hidable">BY Oren Gamchi</div>
+  <button id="camera-switch" class="control-panel" title="החלף מצלמה">🔄</button>
+  
+  <!-- Signature elements -->
+  <div id="signature-left" class="signature">BY Oren Gamchi</div>
+  <div id="signature-right" class="signature">BY Oren Gamchi</div>
 
   <!-- Third-party libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
-
 
   <script>
     // --- Global constants and variables ---
@@ -198,28 +256,31 @@
     const ROTATION_FORCE = 0.2, ROTATIONAL_DAMPING = 0.95;
 
     // DOM element references
-    const video = document.getElementById('video'), cameraSwitchBtn = document.getElementById('camera-switch'),
+    const video = document.getElementById('video'),
+          cameraSwitchBtn = document.getElementById('camera-switch'),
           densitySlider = document.getElementById('densitySlider'),
-          shapeSelect = document.getElementById('shapeSelect'), forceSlider = document.getElementById('forceSlider'),
+          forceSlider = document.getElementById('forceSlider'),
           depthSlider = document.getElementById('depthSlider'),
-          colorModeSelect = document.getElementById('colorModeSelect'),
-          backgroundSelect = document.getElementById('backgroundSelect'),
-          snapshotBtn = document.getElementById('snapshotBtn'),
-          hideControlsBtn = document.getElementById('hideControlsBtn');
+          toggleControlsBtn = document.getElementById('toggleControlsBtn'),
+          mainControls = document.getElementById('main-controls'),
+          shapeSelector = document.getElementById('shape-selector'),
+          currentShapeBtn = document.getElementById('current-shape-btn'),
+          shapeOptions = document.getElementById('shape-options');
    
     // Offscreen canvas for video processing
     const offscreenCanvas = document.createElement('canvas');
     const offscreenCtx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
 
     // State variables
-    let shapes = [], prevFrameData = null, currentFacingMode = 'environment', currentStream,
-        currentShape = 'box', currentColorMode = 'normal', currentBackground = 'grid',
-        hideControlsTimeout, worldWidth, worldHeight, grid, stars;
+    let shapes = [], prevFrameData = null, currentStream,
+        currentFacingMode = 'environment',
+        currentShape = 'box',
+        worldWidth, worldHeight, grid;
 
     // --- Three.js setup ---
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
    
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -243,39 +304,14 @@
     // --- Core functions ---
 
     /**
-     * Creates the grid floor.
+     * Creates the cyber grid floor.
      */
     function createFloor() {
         grid = new THREE.GridHelper(1000, 100, 0xffffff, 0xffffff);
-        grid.material.opacity = 0.3;
-        grid.material.transparent = true;
+        const colors = new Float32Array(grid.geometry.attributes.position.count * 3);
+        grid.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        grid.material = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.3 });
         scene.add(grid);
-    }
-
-    /**
-     * Creates a starfield background.
-     */
-    function createStarfield() {
-        const starVertices = [];
-        for (let i = 0; i < 10000; i++) {
-            const x = THREE.MathUtils.randFloatSpread(2000);
-            const y = THREE.MathUtils.randFloatSpread(2000);
-            const z = THREE.MathUtils.randFloatSpread(2000);
-            starVertices.push(x, y, z);
-        }
-        const starGeometry = new THREE.BufferGeometry();
-        starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
-        const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.7 });
-        stars = new THREE.Points(starGeometry, starMaterial);
-        scene.add(stars);
-    }
-
-    /**
-     * Updates the background based on selection.
-     */
-    function updateBackground() {
-        grid.visible = (currentBackground === 'grid');
-        stars.visible = (currentBackground === 'stars');
     }
 
     /**
@@ -293,29 +329,17 @@
           resizeAndInit();
         };
       } catch (e) {
-        if (facingMode === 'environment') setupCamera('user');
-        else alert('לא ניתן לגשת למצלמה.');
+        if (facingMode === 'environment') {
+            currentFacingMode = 'user';
+            setupCamera('user');
+        } else {
+            alert('לא ניתן לגשת למצלמה.');
+        }
       }
     }
-
+    
     /**
-     * Hides all control elements.
-     */
-    function hideControls() {
-        document.querySelectorAll('.hidable').forEach(c => c.classList.add('hidden'));
-    }
-
-    /**
-     * Shows the controls and resets the auto-hide timer.
-     */
-    function showAndResetTimer() {
-        document.querySelectorAll('.hidable').forEach(c => c.classList.remove('hidden'));
-        clearTimeout(hideControlsTimeout);
-        hideControlsTimeout = setTimeout(hideControls, 5000);
-    }
-
-    /**
-     * Recalculates world dimensions based on video aspect ratio and re-initializes shapes.
+     * Recalculates world dimensions and re-initializes shapes.
      */
     function resizeAndInit() {
       const aspectRatio = video.videoWidth / video.videoHeight || 16/9;
@@ -331,7 +355,6 @@
 
     /**
      * Creates a geometry based on the current shape selection.
-     * @returns {THREE.BufferGeometry} The created geometry.
      */
     function createGeometry() {
         const size = GRID_DENSITY * 0.9;
@@ -358,8 +381,10 @@
      * Clears existing shapes and creates a new grid of shapes.
      */
     function initShapes() {
+        // Clear old shapes
         shapes.forEach(s => { scene.remove(s); s.geometry.dispose(); s.material.dispose(); });
         shapes = [];
+
         const geometry = createGeometry();
         const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7, metalness: 0.1 });
         
@@ -374,10 +399,7 @@
         const totalWorldWidth = totalGridW * GRID_DENSITY;
         const totalWorldHeight = totalGridH * GRID_DENSITY;
 
-        if (grid) {
-            const floorY = - (totalWorldHeight / 2) - 50;
-            grid.position.y = floorY;
-        }
+        grid.position.y = - (totalWorldHeight / 2) - 50;
         
         for (let y = 0; y < totalGridH; y++) {
             for (let x = 0; x < totalGridW; x++) {
@@ -397,9 +419,7 @@
                 }
                 
                 const shapeMaterial = material.clone();
-                if (!isVideoShape) {
-                    shapeMaterial.color.set(0x1a1a1a);
-                }
+                if (!isVideoShape) shapeMaterial.color.set(0x1a1a1a);
 
                 const shape = new THREE.Mesh(geometry, shapeMaterial);
                 shape.castShadow = true;
@@ -414,15 +434,14 @@
                 };
 
                 if (isVideoShape) {
-                    const videoX = x - borderSize;
-                    const videoY = y - borderSize;
-                    shape.userData.dataIndex = (videoY * gridW + videoX) * 4;
+                    shape.userData.dataIndex = ((y - borderSize) * gridW + (x - borderSize)) * 4;
                 }
 
                 shapes.push(shape);
                 scene.add(shape);
             }
         }
+        
         prevFrameData = null;
     }
 
@@ -433,45 +452,30 @@
       requestAnimationFrame(animationLoop);
       const time = Date.now() * 0.0005;
       
-      if (grid && grid.visible) {
-        const color1 = new THREE.Color().setHSL(time % 1, 0.7, 0.5);
-        const color2 = new THREE.Color().setHSL((time + 0.2) % 1, 0.7, 0.5);
-        const colors = grid.geometry.attributes.color.array;
-        const divisions = 100;
-        const center = divisions / 2;
-        for (let i = 0, j = 0; i <= divisions; i++) {
-            const color = i === center ? color1 : color2;
-            color.toArray(colors, j); j += 3; color.toArray(colors, j); j += 3;
-        }
-        for (let i = 0, j = (divisions + 1) * 6; i <= divisions; i++) {
-            const color = i === center ? color1 : color2;
-            color.toArray(colors, j); j += 3; color.toArray(colors, j); j += 3;
-        }
-        grid.geometry.attributes.color.needsUpdate = true;
+      const color1 = new THREE.Color().setHSL(time % 1, 0.7, 0.5);
+      const color2 = new THREE.Color().setHSL((time + 0.3) % 1, 0.8, 0.5);
+      const colors = grid.geometry.attributes.color.array;
+      for (let i = 0; i < colors.length; i += 3) {
+          const color = (i % 6 === 0) ? color1 : color2;
+          colors[i] = color.r;
+          colors[i + 1] = color.g;
+          colors[i + 2] = color.b;
       }
+      grid.geometry.attributes.color.needsUpdate = true;
       
-      if (stars && stars.visible) {
-          stars.rotation.x = time * 0.05;
-          stars.rotation.y = time * 0.05;
-      }
-
-      if (video.readyState >= 4) { 
-          updateVideoState(time); 
-      }
+      if (video.readyState >= 4) updateVideoState(); 
       updatePhysics();
       controls.update();
       renderer.render(scene, camera);
     }
    
     /**
-     * Updates the physics for each shape (position and rotation).
+     * Updates the physics for each shape.
      */
     function updatePhysics() {
-        for (let i = 0; i < shapes.length; i++) {
-            const shape = shapes[i];
+        for (const shape of shapes) {
             const restoreForce = shape.userData.originPosition.clone().sub(shape.position).multiplyScalar(RESTORE_SPEED);
-            shape.userData.velocity.add(restoreForce);
-            shape.userData.velocity.multiplyScalar(DAMPING);
+            shape.userData.velocity.add(restoreForce).multiplyScalar(DAMPING);
             shape.position.add(shape.userData.velocity);
             const deltaRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(shape.userData.rotationalVelocity.x, shape.userData.rotationalVelocity.y, shape.userData.rotationalVelocity.z));
             shape.quaternion.multiplyQuaternions(deltaRotation, shape.quaternion);
@@ -481,10 +485,9 @@
     }
 
     /**
-     * Processes the video frame, detects motion, and updates shape colors and velocities.
-     * @param {number} time - The current animation time for psychedelic effects.
+     * Processes video, detects motion, and updates shapes.
      */
-    function updateVideoState(time) {
+    function updateVideoState() {
       offscreenCtx.save();
       if (currentFacingMode === 'user') {
         offscreenCtx.scale(-1, 1);
@@ -495,41 +498,32 @@
 
       const currentFrameData = offscreenCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height).data;
 
-      if (prevFrameData && prevFrameData.length === currentFrameData.length) {
-        for (let i = 0; i < shapes.length; i++) {
-          const shape = shapes[i];
+      if (prevFrameData) {
+        for (const shape of shapes) {
           if (!shape.userData.isVideoShape) continue;
-
           const dataIndex = shape.userData.dataIndex;
-          let r = currentFrameData[dataIndex];
-          let g = currentFrameData[dataIndex + 1];
-          let b = currentFrameData[dataIndex + 2];
-
-          // Apply color modes
-          switch(currentColorMode) {
-              case 'grayscale':
-                  const avg = (r + g + b) / 3;
-                  r = g = b = avg;
-                  break;
-              case 'invert':
-                  r = 255 - r; g = 255 - g; b = 255 - b;
-                  break;
-              case 'psychedelic':
-                  const hue = (time + (dataIndex / 1000)) % 1;
-                  const tempColor = new THREE.Color().setHSL(hue, 1, 0.5);
-                  r = tempColor.r * 255; g = tempColor.g * 255; b = tempColor.b * 255;
-                  break;
-          }
+          const r = currentFrameData[dataIndex];
+          const g = currentFrameData[dataIndex + 1];
+          const b = currentFrameData[dataIndex + 2];
           shape.material.color.setRGB(r / 255, g / 255, b / 255);
-
           const diff = Math.abs(r - prevFrameData[dataIndex]) + Math.abs(g - prevFrameData[dataIndex+1]) + Math.abs(b - prevFrameData[dataIndex+2]);
           if (diff > MOTION_THRESHOLD) {
-            shape.userData.velocity.add(new THREE.Vector3(0, 0, -EXPLOSION_FORCE));
+            shape.userData.velocity.z -= EXPLOSION_FORCE;
             shape.userData.rotationalVelocity.add(new THREE.Vector3((Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE));
           }
         }
       }
       prevFrameData = currentFrameData;
+    }
+
+    /**
+     * Sets the current shape icon on the main button.
+     */
+    function updateCurrentShapeIcon() {
+        const shapeButton = shapeOptions.querySelector(`.shape-btn[data-shape="${currentShape}"]`);
+        if (shapeButton) {
+            currentShapeBtn.innerHTML = shapeButton.innerHTML;
+        }
     }
 
     // --- Event Listeners ---
@@ -538,23 +532,31 @@
       setupCamera(currentFacingMode);
     });
     densitySlider.addEventListener('input', () => { GRID_DENSITY = 40 - parseInt(densitySlider.value); resizeAndInit(); });
-    shapeSelect.addEventListener('change', (e) => { currentShape = e.target.value; resizeAndInit(); });
     forceSlider.addEventListener('input', (e) => EXPLOSION_FORCE = parseFloat(e.target.value));
     depthSlider.addEventListener('input', (e) => { SHAPE_DEPTH = parseFloat(e.target.value); resizeAndInit(); });
-    colorModeSelect.addEventListener('change', (e) => currentColorMode = e.target.value);
-    backgroundSelect.addEventListener('change', (e) => {
-        currentBackground = e.target.value;
-        updateBackground();
+    toggleControlsBtn.addEventListener('click', () => mainControls.classList.toggle('hidden'));
+    
+    // Shape selector listeners
+    currentShapeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        shapeSelector.classList.toggle('expanded');
     });
-    snapshotBtn.addEventListener('click', () => {
-        const link = document.createElement('a');
-        link.download = 'wowow-cam-snapshot.png';
-        link.href = renderer.domElement.toDataURL('image/png');
-        link.click();
+
+    shapeOptions.addEventListener('click', (e) => {
+        const button = e.target.closest('.shape-btn');
+        if (!button) return;
+        currentShape = button.dataset.shape;
+        updateCurrentShapeIcon();
+        resizeAndInit();
+        shapeSelector.classList.remove('expanded');
     });
-    hideControlsBtn.addEventListener('click', hideControls);
-    window.addEventListener('pointerdown', showAndResetTimer);
-    window.addEventListener('pointermove', showAndResetTimer);
+
+    window.addEventListener('click', () => {
+        if (shapeSelector.classList.contains('expanded')) {
+            shapeSelector.classList.remove('expanded');
+        }
+    });
+
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
@@ -564,10 +566,8 @@
 
     // --- Initial setup ---
     createFloor();
-    createStarfield();
-    updateBackground();
+    updateCurrentShapeIcon();
     setupCamera(currentFacingMode);
-    showAndResetTimer();
     animationLoop();
   </script>
 </body>

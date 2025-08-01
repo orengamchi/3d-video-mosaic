@@ -35,6 +35,7 @@
       z-index: 10;
       background: rgba(0, 0, 0, 0.4);
       backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       padding: 10px;
       border-radius: 15px;
       display: flex;
@@ -51,6 +52,14 @@
       transform: translateX(-50%);
       flex-direction: row;
       padding: 10px 15px;
+      transition: bottom 0.3s ease; /* Added for smooth transition */
+    }
+
+    /* Mobile-specific adjustment for controls position */
+    @media (max-width: 768px) {
+      #controls {
+        bottom: 30px; /* Raised by 10px for better mobile usability */
+      }
     }
 
     /* Camera switch button styling */
@@ -133,6 +142,7 @@
         transform: translateX(-50%) scale(0.9);
         background: rgba(20, 20, 20, 0.7);
         backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
         padding: 8px;
         border-radius: 12px;
         border: 1px solid rgba(255, 255, 255, 0.2);
@@ -276,7 +286,7 @@
           currentShapeBtn = document.getElementById('current-shape-btn'),
           shapeOptions = document.getElementById('shape-options'),
           recordBtn = document.getElementById('recordBtn');
-   
+    
     // Canvases for processing
     const segmentationCanvas = document.getElementById('segmentation-canvas');
     const segmentationCtx = segmentationCanvas.getContext('2d', { willReadFrequently: true });
@@ -297,7 +307,7 @@
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000); // Increased far plane
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
-   
+    
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -349,20 +359,17 @@
         await video.play();
         videoTexture = new THREE.VideoTexture(video);
         
-        if (facingMode === 'user') {
-            videoTexture.wrapS = THREE.ClampToEdgeWrapping;
-            videoTexture.repeat.x = 1;
-        } else {
-            videoTexture.wrapS = THREE.RepeatWrapping;
-            videoTexture.repeat.x = -1;
-        }
+        videoTexture.wrapS = THREE.ClampToEdgeWrapping;
+        videoTexture.wrapT = THREE.ClampToEdgeWrapping;
 
         GRID_DENSITY = 40 - parseInt(densitySlider.value);
         resizeAndInit();
       } catch (e) {
+        console.error("Camera setup failed:", e);
         if (facingMode === 'environment') {
+            alert('מצלמה אחורית לא נמצאה, עובר למצלמה קדמית.');
             currentFacingMode = 'user';
-            setupCamera('user');
+            await setupCamera('user');
         } else {
             alert('לא ניתן לגשת למצלמה.');
         }
@@ -370,7 +377,8 @@
     }
     
     function resizeAndInit() {
-      const aspectRatio = video.videoWidth / video.videoHeight || 16/9;
+      if (!video.videoWidth || !video.videoHeight) return; // Wait for video metadata
+      const aspectRatio = video.videoWidth / video.videoHeight;
       if (window.innerWidth / window.innerHeight > aspectRatio) {
         worldHeight = 500;
         worldWidth = worldHeight * aspectRatio;
@@ -402,15 +410,16 @@
             case 'box': default: return new THREE.BoxGeometry(size, size, SHAPE_DEPTH);
         }
     }
-   
+    
     function initShapes() {
         if (particleGroup) {
             scene.remove(particleGroup);
         }
         shapes = [];
         particleGroup = new THREE.Group();
-        // particleGroup.rotation.y = Math.PI; // Removed to face camera by default
         scene.add(particleGroup);
+
+        particleGroup.scale.x = (currentFacingMode === 'user') ? -1 : 1;
 
         if (videoBackgroundPlane) {
             particleGroup.remove(videoBackgroundPlane);
@@ -432,19 +441,18 @@
         const totalWorldWidth = totalGridW * GRID_DENSITY;
         const totalWorldHeight = totalGridH * GRID_DENSITY;
 
-        grid.position.y = - (totalWorldHeight / 2) - 50;
+        if(grid) grid.position.y = - (totalWorldHeight / 2) - 50;
         
-        // Create 3D background plane
-        const planeGeo = new THREE.PlaneGeometry(worldWidth, worldHeight); // Adjusted size
+        const planeGeo = new THREE.PlaneGeometry(worldWidth, worldHeight);
         const planeMat = new THREE.MeshBasicMaterial({ map: videoTexture });
         videoBackgroundPlane = new THREE.Mesh(planeGeo, planeMat);
-        videoBackgroundPlane.position.z = 0; // Position it at the origin of the group
-        particleGroup.add(videoBackgroundPlane); // Add to the group to rotate with it
+        videoBackgroundPlane.position.z = 0;
+        particleGroup.add(videoBackgroundPlane);
 
         for (let y = 0; y < totalGridH; y++) {
             for (let x = 0; x < totalGridW; x++) {
                 const isVideoShape = (x >= borderSize && x < gridW + borderSize && y >= borderSize && y < gridH + borderSize);
-                let originX = ((totalGridW - 1 - x) * GRID_DENSITY) - (totalWorldWidth / 2);
+                let originX = (x * GRID_DENSITY) - (totalWorldWidth / 2);
                 let originY = -(y * GRID_DENSITY) + (totalWorldHeight / 2);
                 
                 const shape = new THREE.Mesh(geometry.clone(), material.clone());
@@ -480,23 +488,25 @@
       
       processFrame();
       
-      const color1 = new THREE.Color().setHSL(time % 1, 0.7, 0.5);
-      const color2 = new THREE.Color().setHSL((time + 0.3) % 1, 0.8, 0.5);
-      const colors = grid.geometry.attributes.color.array;
-      for (let i = 0; i < colors.length; i += 3) {
-          const color = (i % 6 === 0) ? color1 : color2;
-          colors[i] = color.r;
-          colors[i + 1] = color.g;
-          colors[i + 2] = color.b;
+      if(grid) {
+        const color1 = new THREE.Color().setHSL(time % 1, 0.7, 0.5);
+        const color2 = new THREE.Color().setHSL((time + 0.3) % 1, 0.8, 0.5);
+        const colors = grid.geometry.attributes.color.array;
+        for (let i = 0; i < colors.length; i += 3) {
+            const color = (i % 6 === 0) ? color1 : color2;
+            colors[i] = color.r;
+            colors[i + 1] = color.g;
+            colors[i + 2] = color.b;
+        }
+        grid.geometry.attributes.color.needsUpdate = true;
       }
-      grid.geometry.attributes.color.needsUpdate = true;
       
       if (lastSegmentationResults) updateSceneState();
       updatePhysics();
       controls.update();
       renderer.render(scene, camera);
     }
-   
+    
     function updatePhysics() {
         for (const shape of shapes) {
             const restoreForce = shape.userData.originPosition.clone().sub(shape.position).multiplyScalar(RESTORE_SPEED);
@@ -545,7 +555,7 @@
                 if (prevFrameData) {
                     const diff = Math.abs(r - prevFrameData[dataIndex]) + Math.abs(g - prevFrameData[dataIndex+1]) + Math.abs(b - prevFrameData[dataIndex+2]);
                     if (diff > MOTION_THRESHOLD) {
-                        shape.userData.velocity.z += EXPLOSION_FORCE; // Changed to +=
+                        shape.userData.velocity.z += EXPLOSION_FORCE;
                         shape.userData.rotationalVelocity.add(new THREE.Vector3((Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE));
                     }
                 }
@@ -577,10 +587,13 @@
             const blob = new Blob(recordedChunks, { type: 'video/webm' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
+            a.style.display = 'none';
             a.href = url;
             a.download = 'wowow-cam-recording.webm';
+            document.body.appendChild(a);
             a.click();
-            URL.revokeObjectURL(url);
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
         };
 
         mediaRecorder.start();
@@ -589,7 +602,7 @@
     }
 
     function stopRecording() {
-        mediaRecorder.stop();
+        if(mediaRecorder) mediaRecorder.stop();
         recordBtn.classList.remove('recording');
         recordBtn.title = "הקלטה";
     }

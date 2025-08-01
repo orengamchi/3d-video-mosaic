@@ -292,6 +292,10 @@
     const segmentationCtx = segmentationCanvas.getContext('2d', { willReadFrequently: true });
     const offscreenCanvas = document.createElement('canvas');
     const offscreenCtx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
+    // --- ADDED: High-resolution canvas for a sharper mask ---
+    const highResMaskCanvas = document.createElement('canvas');
+    const highResMaskCtx = highResMaskCanvas.getContext('2d');
+
 
     // State variables
     let shapes = [], currentStream, prevFrameData = null,
@@ -301,7 +305,8 @@
         isProcessing = false,
         lastSegmentationResults = null,
         videoTexture, videoBackgroundPlane, particleGroup,
-        mediaRecorder, recordedChunks = [];
+        mediaRecorder, recordedChunks = [],
+        maskPlane, alphaTexture;
 
     // --- Three.js setup ---
     const scene = new THREE.Scene();
@@ -315,8 +320,10 @@
     document.body.appendChild(renderer.domElement);
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    camera.position.z = 800; // Increased initial distance
-    controls.maxDistance = 800; // Limit zoom out
+    camera.position.z = 800;
+    controls.maxDistance = 800;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.5;
     controls.update();
 
     // Lighting
@@ -386,6 +393,9 @@
         worldWidth = 500;
         worldHeight = worldWidth / aspectRatio;
       }
+      // --- ADDED: Set size for the high-resolution mask canvas ---
+      highResMaskCanvas.width = 512;
+      highResMaskCanvas.height = 512 / aspectRatio;
       initShapes();
     }
 
@@ -421,9 +431,9 @@
 
         particleGroup.scale.x = (currentFacingMode === 'user') ? -1 : 1;
 
-        if (videoBackgroundPlane) {
-            particleGroup.remove(videoBackgroundPlane);
-        }
+        if (videoBackgroundPlane) particleGroup.remove(videoBackgroundPlane);
+        if (maskPlane) particleGroup.remove(maskPlane);
+        
 
         const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0.6 });
         const geometry = createGeometry();
@@ -431,6 +441,7 @@
         const borderSize = 10;
         const gridW = Math.round(worldWidth / GRID_DENSITY);
         const gridH = Math.round(worldHeight / GRID_DENSITY);
+        
         offscreenCanvas.width = gridW;
         offscreenCanvas.height = gridH;
         segmentationCanvas.width = gridW;
@@ -444,10 +455,27 @@
         if(grid) grid.position.y = - (totalWorldHeight / 2) - 50;
         
         const planeGeo = new THREE.PlaneGeometry(worldWidth, worldHeight);
-        const planeMat = new THREE.MeshBasicMaterial({ map: videoTexture });
+        
+        const planeMat = new THREE.MeshBasicMaterial({ 
+            map: videoTexture,
+            side: THREE.FrontSide 
+        });
         videoBackgroundPlane = new THREE.Mesh(planeGeo, planeMat);
         videoBackgroundPlane.position.z = 0;
         particleGroup.add(videoBackgroundPlane);
+
+        // --- CHANGED: Use the new high-res canvas for the alpha texture ---
+        alphaTexture = new THREE.CanvasTexture(highResMaskCanvas);
+        
+        const maskMaterial = new THREE.MeshBasicMaterial({
+            map: videoTexture,
+            alphaMap: alphaTexture,
+            transparent: true,
+            side: THREE.BackSide
+        });
+        maskPlane = new THREE.Mesh(planeGeo.clone(), maskMaterial);
+        particleGroup.add(maskPlane);
+
 
         for (let y = 0; y < totalGridH; y++) {
             for (let x = 0; x < totalGridW; x++) {
@@ -503,7 +531,7 @@
       
       if (lastSegmentationResults) updateSceneState();
       updatePhysics();
-      controls.update();
+      controls.update(); // Required for auto-rotation to work
       renderer.render(scene, camera);
     }
     
@@ -521,8 +549,19 @@
     }
 
     function updateSceneState() {
-        if (!lastSegmentationResults) return;
+        if (!lastSegmentationResults || !alphaTexture) return;
 
+        // --- REPLACED: Logic to create the inverted mask now uses the high-res canvas for a sharp cut ---
+        highResMaskCtx.save();
+        highResMaskCtx.clearRect(0, 0, highResMaskCanvas.width, highResMaskCanvas.height);
+        highResMaskCtx.drawImage(lastSegmentationResults.segmentationMask, 0, 0, highResMaskCanvas.width, highResMaskCanvas.height);
+        highResMaskCtx.globalCompositeOperation = 'xor';
+        highResMaskCtx.fillStyle = 'white';
+        highResMaskCtx.fillRect(0, 0, highResMaskCanvas.width, highResMaskCanvas.height);
+        highResMaskCtx.restore();
+        alphaTexture.needsUpdate = true;
+
+        // --- This low-res part is for the particles only ---
         segmentationCtx.save();
         segmentationCtx.clearRect(0, 0, segmentationCanvas.width, segmentationCanvas.height);
         segmentationCtx.drawImage(lastSegmentationResults.segmentationMask, 0, 0, segmentationCanvas.width, segmentationCanvas.height);

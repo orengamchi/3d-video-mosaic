@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>פסיפס וידאו תלת-ממדי</title>
+  <title>פסיפס וידאו עם מסך אחורי מסונכרן</title>
   <style>
     /* General page and body styling */
     html, body {
@@ -19,15 +19,15 @@
       font-family: system-ui, sans-serif;
     }
     /* Canvas and video positioning */
-    #three-canvas, video {
+    #three-canvas, video, .processing-canvas {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
     }
-    video { z-index: 1; opacity: 0; /* Hidden but accessible for processing */ }
-    #three-canvas { z-index: 2; background: #000; }
+    video, .processing-canvas { z-index: 1; opacity: 0; pointer-events: none; /* Hidden but accessible */ }
+    #three-canvas { z-index: 2; background: transparent; }
     
     /* Control panel styling */
     .control-panel {
@@ -71,7 +71,7 @@
     #main-controls {
         display: flex;
         align-items: center;
-        gap: 15px;
+        gap: 10px;
         transition: all 0.5s ease;
     }
 
@@ -96,6 +96,7 @@
         padding: 5px;
         font-family: system-ui, sans-serif;
     }
+    select option { background: #333; color: white; }
     
     /* Styling for individual control items */
     .control-item-col {
@@ -104,7 +105,7 @@
         align-items: center;
     }
     .control-item-col input[type="range"] {
-        width: 100px;
+        width: 80px;
     }
 
     #toggleControlsBtn {
@@ -123,6 +124,9 @@
     }
     #shape-options {
         display: flex;
+        flex-wrap: wrap;
+        width: 240px; /* Wider to accommodate more icons */
+        justify-content: center;
         position: absolute;
         bottom: 100%;
         left: 50%;
@@ -162,7 +166,17 @@
         padding: 8px;
     }
 
-    /* --- New Signature Styles --- */
+    #recordBtn.recording {
+        background-color: #ff4136;
+        animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(255, 65, 54, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(255, 65, 54, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 65, 54, 0); }
+    }
+
+    /* Signature Styles */
     .signature {
         position: fixed;
         bottom: 10px;
@@ -183,6 +197,7 @@
 <body>
   <!-- Video element to capture camera stream -->
   <video id="video" autoplay playsinline muted></video>
+  <canvas id="segmentation-canvas" class="processing-canvas"></canvas>
  
   <!-- Main control panel for effects -->
   <div id="controls" class="control-panel">
@@ -197,36 +212,29 @@
             <div id="shape-selector">
                 <button id="current-shape-btn" class="control-button" title="שנה צורה"></button>
                 <div id="shape-options">
-                    <button class="shape-btn control-button" data-shape="box" title="קובייה">
-                        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 4.5H19.5V19.5H4.5V4.5M6 6V18H18V6H6Z"></path></svg>
-                    </button>
-                    <button class="shape-btn control-button" data-shape="sphere" title="כדור">
-                        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 1 0 22 12A10 10 0 0 0 12 2Z"></path></svg>
-                    </button>
-                    <button class="shape-btn control-button" data-shape="hexagon" title="משושה">
-                        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M17.16 4.42L12 2L6.84 4.42L4.26 9.58L6.84 14.74L12 17.16L17.16 14.74L19.74 9.58L17.16 4.42Z"></path></svg>
-                    </button>
-                    <button class="shape-btn control-button" data-shape="nail" title="מסמר">
-                        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M13.6 2.6L12.19 4L13.6 5.41L14.21 4.79L15.62 6.2L14.21 7.61L15.62 9L14.21 10.41L15.62 11.82L14.21 13.24L15.62 14.65L14.21 16.06L15.62 17.47L12.83 20.27L11.41 18.85L18.41 11.85L13.6 7.03L11.41 9.22L10 7.81L11.41 6.39L10 4.97L11.41 3.56L10 2.15L11.41 0.73L13.6 2.6Z"></path></svg>
-                    </button>
-                    <button class="shape-btn control-button" data-shape="cone" title="חרוט">
-                        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2L4 22H20L12 2Z"></path></svg>
-                    </button>
-                    <button class="shape-btn control-button" data-shape="torus" title="טורוס">
-                        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 6A6 6 0 1 0 18 12A6 6 0 0 0 12 6M12 4A8 8 0 1 1 4 12A8 8 0 0 1 12 4Z"></path></svg>
-                    </button>
+                    <button class="shape-btn control-button" data-shape="box" title="קובייה"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 4.5H19.5V19.5H4.5V4.5M6 6V18H18V6H6Z"></path></svg></button>
+                    <button class="shape-btn control-button" data-shape="sphere" title="כדור"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 1 0 22 12A10 10 0 0 0 12 2Z"></path></svg></button>
+                    <button class="shape-btn control-button" data-shape="cone" title="חרוט"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2L4 22H20L12 2Z"></path></svg></button>
+                    <button class="shape-btn control-button" data-shape="torus" title="טורוס"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 6A6 6 0 1 0 18 12A6 6 0 0 0 12 6M12 4A8 8 0 1 1 4 12A8 8 0 0 1 12 4Z"></path></svg></button>
+                    <button class="shape-btn control-button" data-shape="cylinder" title="גליל"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12,2C9.24,2 7,4.24 7,7V17C7,19.76 9.24,22 12,22C14.76,22 17,19.76 17,17V7C17,4.24 14.76,2 12,2Z"></path></svg></button>
+                    <button class="shape-btn control-button" data-shape="tetrahedron" title="פירמידה"><svg viewBox="0 0 24 24"><path fill="currentColor" d="m12 2l-10 18h20l-10-18zm0 4.63l5.18 9.37h-10.36l5.18-9.37z"></path></svg></button>
+                    <button class="shape-btn control-button" data-shape="octahedron" title="אוקטהדרון"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2L2 12L12 22L22 12L12 2Z"></path></svg></button>
+                    <button class="shape-btn control-button" data-shape="dodecahedron" title="דודקהדרון"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.5L5.5 7L2 15.5L8.5 20L15.5 20L22 15.5L18.5 7L12 2.5Z"></path></svg></button>
+                    <button class="shape-btn control-button" data-shape="icosahedron" title="איקוסהדרון"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 1L2 9L12 23L22 9L12 1Z"></path></svg></button>
+                    <button class="shape-btn control-button" data-shape="nail" title="מסמר"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M13.6 2.6L12.19 4L13.6 5.41L14.21 4.79L15.62 6.2L14.21 7.61L15.62 9L14.21 10.41L15.62 11.82L14.21 13.24L15.62 14.65L14.21 16.06L15.62 17.47L12.83 20.27L11.41 18.85L18.41 11.85L13.6 7.03L11.41 9.22L10 7.81L11.41 6.39L10 4.97L11.41 3.56L10 2.15L11.41 0.73L13.6 2.6Z"></path></svg></button>
                 </div>
             </div>
         </div>
 
         <div class="control-item-col">
             <label for="forceSlider">תזוזה</label>
-            <input type="range" id="forceSlider" min="1" max="25" value="8" step="0.5" title="תזוזה">
+            <input type="range" id="forceSlider" min="1" max="50" value="20" step="1" title="תזוזה">
         </div>
         <div class="control-item-col">
-            <label for="depthSlider">עומק</label>
-            <input type="range" id="depthSlider" min="0.1" max="50" value="15" step="0.5" title="עומק">
+            <label for="depthSlider">עובי צורה</label>
+            <input type="range" id="depthSlider" min="0.1" max="50" value="15" step="0.5" title="עובי צורה">
         </div>
+        <button id="recordBtn" class="control-button" title="הקלטה">🔴</button>
     </div>
     <button id="toggleControlsBtn" class="control-button" title="הצג/הסתר תפריט">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -245,14 +253,15 @@
   <div id="signature-right" class="signature">BY Oren Gamchi</div>
 
   <!-- Third-party libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
 
   <script>
     // --- Global constants and variables ---
-    let GRID_DENSITY = 20, MOTION_THRESHOLD = 20, EXPLOSION_FORCE = 8, SHAPE_DEPTH = 15;
-    const RESTORE_SPEED = 0.03, DAMPING = 0.90;
+    let GRID_DENSITY = 20, EXPLOSION_FORCE = 20, SHAPE_DEPTH = 15, MOTION_THRESHOLD = 20;
+    const RESTORE_SPEED = 0.05, DAMPING = 0.85;
     const ROTATION_FORCE = 0.2, ROTATIONAL_DAMPING = 0.95;
 
     // DOM element references
@@ -265,22 +274,29 @@
           mainControls = document.getElementById('main-controls'),
           shapeSelector = document.getElementById('shape-selector'),
           currentShapeBtn = document.getElementById('current-shape-btn'),
-          shapeOptions = document.getElementById('shape-options');
+          shapeOptions = document.getElementById('shape-options'),
+          recordBtn = document.getElementById('recordBtn');
    
-    // Offscreen canvas for video processing
+    // Canvases for processing
+    const segmentationCanvas = document.getElementById('segmentation-canvas');
+    const segmentationCtx = segmentationCanvas.getContext('2d', { willReadFrequently: true });
     const offscreenCanvas = document.createElement('canvas');
     const offscreenCtx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
 
     // State variables
-    let shapes = [], prevFrameData = null, currentStream,
+    let shapes = [], currentStream, prevFrameData = null,
         currentFacingMode = 'environment',
         currentShape = 'box',
-        worldWidth, worldHeight, grid;
+        worldWidth, worldHeight, grid,
+        isProcessing = false,
+        lastSegmentationResults = null,
+        videoTexture, videoBackgroundPlane, particleGroup,
+        mediaRecorder, recordedChunks = [];
 
     // --- Three.js setup ---
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000); // Increased far plane
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
    
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -288,46 +304,61 @@
     renderer.domElement.id = 'three-canvas';
     document.body.appendChild(renderer.domElement);
 
-    // Orbit controls for camera manipulation
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    camera.position.z = 400;
+    camera.position.z = 800; // Increased initial distance
+    controls.maxDistance = 800; // Limit zoom out
     controls.update();
 
     // Lighting
-    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
     directionalLight.position.set(20, 20, 50);
     directionalLight.castShadow = true;
     camera.add(directionalLight);
     scene.add(camera);
 
+    // --- MediaPipe Setup ---
+    const selfieSegmentation = new SelfieSegmentation({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`});
+    selfieSegmentation.setOptions({ modelSelection: 1 });
+    selfieSegmentation.onResults(results => {
+        lastSegmentationResults = results;
+        isProcessing = false;
+    });
+
+    async function processFrame() {
+        if (video.readyState < 2 || isProcessing) return;
+        isProcessing = true;
+        await selfieSegmentation.send({image: video});
+    }
+
     // --- Core functions ---
 
-    /**
-     * Creates the cyber grid floor.
-     */
     function createFloor() {
-        grid = new THREE.GridHelper(1000, 100, 0xffffff, 0xffffff);
+        grid = new THREE.GridHelper(2000, 200, 0xffffff, 0xffffff); // Increased grid size
         const colors = new Float32Array(grid.geometry.attributes.position.count * 3);
         grid.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
         grid.material = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.3 });
         scene.add(grid);
     }
 
-    /**
-     * Sets up the camera stream.
-     * @param {string} facingMode - 'user' for front camera, 'environment' for back camera.
-     */
     async function setupCamera(facingMode) {
       if (currentStream) currentStream.getTracks().forEach(track => track.stop());
       try {
         currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } });
         video.srcObject = currentStream;
-        video.onloadedmetadata = () => {
-          video.play();
-          GRID_DENSITY = 40 - parseInt(densitySlider.value);
-          resizeAndInit();
-        };
+        await video.play();
+        videoTexture = new THREE.VideoTexture(video);
+        
+        if (facingMode === 'user') {
+            videoTexture.wrapS = THREE.ClampToEdgeWrapping;
+            videoTexture.repeat.x = 1;
+        } else {
+            videoTexture.wrapS = THREE.RepeatWrapping;
+            videoTexture.repeat.x = -1;
+        }
+
+        GRID_DENSITY = 40 - parseInt(densitySlider.value);
+        resizeAndInit();
       } catch (e) {
         if (facingMode === 'environment') {
             currentFacingMode = 'user';
@@ -338,9 +369,6 @@
       }
     }
     
-    /**
-     * Recalculates world dimensions and re-initializes shapes.
-     */
     function resizeAndInit() {
       const aspectRatio = video.videoWidth / video.videoHeight || 16/9;
       if (window.innerWidth / window.innerHeight > aspectRatio) {
@@ -353,19 +381,17 @@
       initShapes();
     }
 
-    /**
-     * Creates a geometry based on the current shape selection.
-     */
     function createGeometry() {
         const size = GRID_DENSITY * 0.9;
         switch(currentShape) {
             case 'sphere': return new THREE.SphereGeometry(size / 2, 16, 12);
             case 'cone': return new THREE.ConeGeometry(size / 2, size * 1.5, 20);
             case 'torus': return new THREE.TorusGeometry(size * 0.3, size * 0.15, 16, 24);
-            case 'hexagon':
-                const hexGeo = new THREE.CylinderGeometry(size / 2, size / 2, SHAPE_DEPTH, 6);
-                hexGeo.rotateX(Math.PI / 2);
-                return hexGeo;
+            case 'cylinder': return new THREE.CylinderGeometry(size / 2, size / 2, SHAPE_DEPTH, 16);
+            case 'tetrahedron': return new THREE.TetrahedronGeometry(size * 0.7);
+            case 'octahedron': return new THREE.OctahedronGeometry(size * 0.6);
+            case 'dodecahedron': return new THREE.DodecahedronGeometry(size * 0.5);
+            case 'icosahedron': return new THREE.IcosahedronGeometry(size * 0.6);
             case 'nail':
                 const head = new THREE.CylinderGeometry(size * 0.4, size * 0.4, SHAPE_DEPTH * 0.1, 12);
                 head.translate(0, SHAPE_DEPTH * 0.5, 0);
@@ -377,22 +403,29 @@
         }
     }
    
-    /**
-     * Clears existing shapes and creates a new grid of shapes.
-     */
     function initShapes() {
-        // Clear old shapes
-        shapes.forEach(s => { scene.remove(s); s.geometry.dispose(); s.material.dispose(); });
+        if (particleGroup) {
+            scene.remove(particleGroup);
+        }
         shapes = [];
+        particleGroup = new THREE.Group();
+        // particleGroup.rotation.y = Math.PI; // Removed to face camera by default
+        scene.add(particleGroup);
 
+        if (videoBackgroundPlane) {
+            particleGroup.remove(videoBackgroundPlane);
+        }
+
+        const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0.6 });
         const geometry = createGeometry();
-        const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7, metalness: 0.1 });
         
         const borderSize = 10;
         const gridW = Math.round(worldWidth / GRID_DENSITY);
         const gridH = Math.round(worldHeight / GRID_DENSITY);
         offscreenCanvas.width = gridW;
         offscreenCanvas.height = gridH;
+        segmentationCanvas.width = gridW;
+        segmentationCanvas.height = gridH;
         
         const totalGridW = gridW + borderSize * 2;
         const totalGridH = gridH + borderSize * 2;
@@ -401,27 +434,22 @@
 
         grid.position.y = - (totalWorldHeight / 2) - 50;
         
+        // Create 3D background plane
+        const planeGeo = new THREE.PlaneGeometry(worldWidth, worldHeight); // Adjusted size
+        const planeMat = new THREE.MeshBasicMaterial({ map: videoTexture });
+        videoBackgroundPlane = new THREE.Mesh(planeGeo, planeMat);
+        videoBackgroundPlane.position.z = 0; // Position it at the origin of the group
+        particleGroup.add(videoBackgroundPlane); // Add to the group to rotate with it
+
         for (let y = 0; y < totalGridH; y++) {
             for (let x = 0; x < totalGridW; x++) {
                 const isVideoShape = (x >= borderSize && x < gridW + borderSize && y >= borderSize && y < gridH + borderSize);
-                let originX, originY;
-                const isHexGrid = currentShape === 'hexagon';
-
-                if (isHexGrid) {
-                    const hexWidth = GRID_DENSITY;
-                    const hexHeight = (Math.sqrt(3) / 2) * hexWidth;
-                    originX = ((totalGridW - 1 - x) * hexWidth) - (totalWorldWidth / 2);
-                    if (y % 2 !== 0) { originX += hexWidth / 2; }
-                    originY = -(y * hexHeight) + (totalWorldHeight / 2);
-                } else {
-                    originX = ((totalGridW - 1 - x) * GRID_DENSITY) - (totalWorldWidth / 2);
-                    originY = -(y * GRID_DENSITY) + (totalWorldHeight / 2);
-                }
+                let originX = ((totalGridW - 1 - x) * GRID_DENSITY) - (totalWorldWidth / 2);
+                let originY = -(y * GRID_DENSITY) + (totalWorldHeight / 2);
                 
-                const shapeMaterial = material.clone();
-                if (!isVideoShape) shapeMaterial.color.set(0x1a1a1a);
+                const shape = new THREE.Mesh(geometry.clone(), material.clone());
+                if (!isVideoShape) shape.material.color.set(0x1a1a1a);
 
-                const shape = new THREE.Mesh(geometry, shapeMaterial);
                 shape.castShadow = true;
                 shape.receiveShadow = true;
                 shape.position.set(originX, originY, 0);
@@ -434,23 +462,23 @@
                 };
 
                 if (isVideoShape) {
-                    shape.userData.dataIndex = ((y - borderSize) * gridW + (x - borderSize)) * 4;
+                    const videoX = x - borderSize;
+                    const videoY = y - borderSize;
+                    shape.userData.dataIndex = (videoY * gridW + videoX) * 4;
                 }
 
                 shapes.push(shape);
-                scene.add(shape);
+                particleGroup.add(shape);
             }
         }
-        
         prevFrameData = null;
     }
 
-    /**
-     * The main animation loop.
-     */
     function animationLoop() {
       requestAnimationFrame(animationLoop);
       const time = Date.now() * 0.0005;
+      
+      processFrame();
       
       const color1 = new THREE.Color().setHSL(time % 1, 0.7, 0.5);
       const color2 = new THREE.Color().setHSL((time + 0.3) % 1, 0.8, 0.5);
@@ -463,20 +491,18 @@
       }
       grid.geometry.attributes.color.needsUpdate = true;
       
-      if (video.readyState >= 4) updateVideoState(); 
+      if (lastSegmentationResults) updateSceneState();
       updatePhysics();
       controls.update();
       renderer.render(scene, camera);
     }
    
-    /**
-     * Updates the physics for each shape.
-     */
     function updatePhysics() {
         for (const shape of shapes) {
             const restoreForce = shape.userData.originPosition.clone().sub(shape.position).multiplyScalar(RESTORE_SPEED);
             shape.userData.velocity.add(restoreForce).multiplyScalar(DAMPING);
             shape.position.add(shape.userData.velocity);
+
             const deltaRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(shape.userData.rotationalVelocity.x, shape.userData.rotationalVelocity.y, shape.userData.rotationalVelocity.z));
             shape.quaternion.multiplyQuaternions(deltaRotation, shape.quaternion);
             shape.quaternion.slerp(shape.userData.originalQuaternion, RESTORE_SPEED * 2);
@@ -484,46 +510,88 @@
         }
     }
 
-    /**
-     * Processes video, detects motion, and updates shapes.
-     */
-    function updateVideoState() {
-      offscreenCtx.save();
-      if (currentFacingMode === 'user') {
-        offscreenCtx.scale(-1, 1);
-        offscreenCtx.translate(-offscreenCanvas.width, 0);
-      }
-      offscreenCtx.drawImage(video, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
-      offscreenCtx.restore();
+    function updateSceneState() {
+        if (!lastSegmentationResults) return;
 
-      const currentFrameData = offscreenCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height).data;
+        segmentationCtx.save();
+        segmentationCtx.clearRect(0, 0, segmentationCanvas.width, segmentationCanvas.height);
+        segmentationCtx.drawImage(lastSegmentationResults.segmentationMask, 0, 0, segmentationCanvas.width, segmentationCanvas.height);
+        segmentationCtx.restore();
+        const segmentationData = segmentationCtx.getImageData(0, 0, segmentationCanvas.width, segmentationCanvas.height).data;
 
-      if (prevFrameData) {
-        for (const shape of shapes) {
-          if (!shape.userData.isVideoShape) continue;
-          const dataIndex = shape.userData.dataIndex;
-          const r = currentFrameData[dataIndex];
-          const g = currentFrameData[dataIndex + 1];
-          const b = currentFrameData[dataIndex + 2];
-          shape.material.color.setRGB(r / 255, g / 255, b / 255);
-          const diff = Math.abs(r - prevFrameData[dataIndex]) + Math.abs(g - prevFrameData[dataIndex+1]) + Math.abs(b - prevFrameData[dataIndex+2]);
-          if (diff > MOTION_THRESHOLD) {
-            shape.userData.velocity.z -= EXPLOSION_FORCE;
-            shape.userData.rotationalVelocity.add(new THREE.Vector3((Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE));
-          }
+        offscreenCtx.save();
+        if (currentFacingMode === 'user') {
+            offscreenCtx.scale(-1, 1);
+            offscreenCtx.translate(-offscreenCanvas.width, 0);
         }
-      }
-      prevFrameData = currentFrameData;
+        offscreenCtx.drawImage(video, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
+        offscreenCtx.restore();
+        const currentFrameData = offscreenCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height).data;
+
+        for (const shape of shapes) {
+            if (!shape.userData.isVideoShape) continue;
+            
+            const dataIndex = shape.userData.dataIndex;
+            const isPerson = segmentationData[dataIndex] > 128;
+
+            shape.visible = isPerson;
+
+            if (isPerson) {
+                const r = currentFrameData[dataIndex];
+                const g = currentFrameData[dataIndex + 1];
+                const b = currentFrameData[dataIndex + 2];
+                shape.material.color.setRGB(r / 255, g / 255, b / 255);
+
+                if (prevFrameData) {
+                    const diff = Math.abs(r - prevFrameData[dataIndex]) + Math.abs(g - prevFrameData[dataIndex+1]) + Math.abs(b - prevFrameData[dataIndex+2]);
+                    if (diff > MOTION_THRESHOLD) {
+                        shape.userData.velocity.z += EXPLOSION_FORCE; // Changed to +=
+                        shape.userData.rotationalVelocity.add(new THREE.Vector3((Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE));
+                    }
+                }
+            }
+        }
+        prevFrameData = currentFrameData;
     }
 
-    /**
-     * Sets the current shape icon on the main button.
-     */
     function updateCurrentShapeIcon() {
         const shapeButton = shapeOptions.querySelector(`.shape-btn[data-shape="${currentShape}"]`);
         if (shapeButton) {
             currentShapeBtn.innerHTML = shapeButton.innerHTML;
         }
+    }
+
+    // --- Recording Logic ---
+    function startRecording() {
+        recordedChunks = [];
+        const stream = renderer.domElement.captureStream(30); // 30 fps
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
+        };
+
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'wowow-cam-recording.webm';
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+
+        mediaRecorder.start();
+        recordBtn.classList.add('recording');
+        recordBtn.title = "עצור הקלטה";
+    }
+
+    function stopRecording() {
+        mediaRecorder.stop();
+        recordBtn.classList.remove('recording');
+        recordBtn.title = "הקלטה";
     }
 
     // --- Event Listeners ---
@@ -535,6 +603,13 @@
     forceSlider.addEventListener('input', (e) => EXPLOSION_FORCE = parseFloat(e.target.value));
     depthSlider.addEventListener('input', (e) => { SHAPE_DEPTH = parseFloat(e.target.value); resizeAndInit(); });
     toggleControlsBtn.addEventListener('click', () => mainControls.classList.toggle('hidden'));
+    recordBtn.addEventListener('click', () => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            stopRecording();
+        } else {
+            startRecording();
+        }
+    });
     
     // Shape selector listeners
     currentShapeBtn.addEventListener('click', (e) => {
@@ -565,10 +640,15 @@
     });
 
     // --- Initial setup ---
-    createFloor();
-    updateCurrentShapeIcon();
-    setupCamera(currentFacingMode);
-    animationLoop();
+    async function initialize() {
+        createFloor();
+        updateCurrentShapeIcon();
+        await selfieSegmentation.initialize();
+        await setupCamera(currentFacingMode);
+        animationLoop();
+    }
+    
+    initialize();
   </script>
 </body>
 </html>

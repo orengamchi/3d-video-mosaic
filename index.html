@@ -33,55 +33,105 @@
     .control-panel {
       position: fixed;
       z-index: 10;
-      background: rgba(0, 0, 0, 0.4);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      padding: 10px;
-      border-radius: 15px;
       display: flex;
       gap: 15px;
       align-items: center;
       color: white;
-      border: 1px solid rgba(255, 255, 255, 0.2);
     }
     
-    /* Main controls at the bottom-center */
-    #controls {
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      flex-direction: row;
-      padding: 10px 15px;
-      transition: bottom 0.3s ease; /* Added for smooth transition */
+    /* Top-center controls container */
+    #top-controls {
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
     }
+    
+    /* Top-left controls container */
+    #top-left-controls {
+        top: 20px;
+        left: 20px;
+    }
+
+    /* Top-right controls container */
+    #top-right-controls {
+        top: 20px;
+        right: 20px;
+    }
+
+    /* Side controls container (Right) */
+    #side-controls {
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        flex-direction: column;
+    }
+    
+    /* Side controls container (Left) */
+    #left-side-controls {
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        flex-direction: column;
+    }
+    
+    /* Bottom controls container */
+    #bottom-controls {
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
 
     /* Mobile-specific adjustment for controls position */
     @media (max-width: 768px) {
-      #controls {
-        bottom: 30px; /* Raised by 10px for better mobile usability */
+      #side-controls {
+        right: 10px;
+      }
+      #left-side-controls {
+        left: 10px;
+      }
+      #bottom-controls {
+        bottom: 80px;
       }
     }
 
-    /* Camera switch button styling */
-    #camera-switch {
-      top: 20px;
-      left: 20px;
-      width: 50px;
-      height: 50px;
-      padding: 0;
-      justify-content: center;
-      font-size: 24px;
-      cursor: pointer;
-      border-radius: 50%;
+    /* General button styling */
+    .control-button {
+        width: 44px;
+        height: 44px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 22px;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        cursor: pointer;
     }
-    #camera-switch:active { background: rgba(0, 0, 0, 0.5); }
+    .control-button:active {
+        background: rgba(0, 0, 0, 0.6);
+    }
     
     /* Controls container for toggling */
-    #main-controls {
+    #main-controls, #shape-gallery, #material-gallery {
         display: flex;
         align-items: center;
         gap: 10px;
         transition: all 0.5s ease;
+    }
+    
+    #shape-gallery, #material-gallery {
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        padding: 8px;
+        border-radius: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        gap: 8px;
+    }
+    
+    #shape-gallery, #material-gallery {
+        flex-direction: column;
     }
 
     /* Hidden state for main controls */
@@ -92,11 +142,23 @@
         padding: 0;
         margin: 0;
         gap: 0;
+        border: none;
     }
+    
+    #shape-gallery.hidden, #material-gallery.hidden {
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        padding: 0;
+        margin: 0;
+        gap: 0;
+        border: none;
+    }
+
 
     /* Form element styling */
     label { font-weight: 500; margin-bottom: 4px; font-size: 14px; text-align: center;}
-    input, select, .control-button { 
+    input, select { 
         cursor: pointer;
         background: rgba(255,255,255,0.1);
         color: white;
@@ -112,68 +174,66 @@
         display: flex;
         flex-direction: column;
         align-items: center;
+        position: relative; /* For positioning the value display */
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 5px 10px;
+        border-radius: 15px;
     }
     .control-item-col input[type="range"] {
         width: 80px;
     }
+    /* Styling for slider value display */
+    .slider-value {
+        position: absolute;
+        top: -20px;
+        background: rgba(0,0,0,0.7);
+        padding: 2px 6px;
+        border-radius: 5px;
+        font-size: 12px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+    .control-item-col:hover .slider-value {
+        opacity: 1;
+    }
 
-    #toggleControlsBtn {
+    #toggleControlsBtn, #toggleShapesBtn, #toggleMaterialsBtn {
       font-size: 20px;
       padding: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: transparent;
-      border: none;
     }
     
-    /* Shape Selector styles */
-    #shape-selector {
-        position: relative;
+    #toggleControlsBtn svg, #toggleShapesBtn svg, #toggleMaterialsBtn svg {
+        color: rgba(255, 255, 255, 0.7);
+        transition: color 0.2s;
     }
-    #shape-options {
-        display: flex;
-        flex-wrap: wrap;
-        width: 240px; /* Wider to accommodate more icons */
-        justify-content: center;
-        position: absolute;
-        bottom: 100%;
-        left: 50%;
-        transform: translateX(-50%) scale(0.9);
-        background: rgba(20, 20, 20, 0.7);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        padding: 8px;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        gap: 8px;
-        margin-bottom: 10px;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.2s ease, transform 0.2s ease;
+    #toggleControlsBtn:hover svg, #toggleShapesBtn:hover svg, #toggleMaterialsBtn:hover svg {
+        color: #fff;
     }
-    #shape-selector.expanded #shape-options {
-        opacity: 1;
-        pointer-events: auto;
-        transform: translateX(-50%) scale(1);
-    }
-    .shape-btn {
+
+    .shape-btn, .material-btn {
         padding: 8px;
         background: transparent;
-        border: 1px solid transparent;
-        opacity: 0.7;
+        border: 2px solid transparent;
+        transition: background-color 0.2s, border-color 0.2s;
     }
-    .shape-btn:hover {
-        opacity: 1;
-        background: rgba(255,255,255,0.1);
-    }
-    .shape-btn svg {
+    .shape-btn svg, .material-btn svg {
         display: block;
-        width: 20px;
-        height: 20px;
+        width: 24px;
+        height: 24px;
+        color: rgba(255, 255, 255, 0.7);
+        transition: color 0.2s;
     }
-    #current-shape-btn {
-        padding: 8px;
+    .shape-btn:hover svg, .material-btn:hover svg,
+    .shape-btn.active svg, .material-btn.active svg {
+        color: #fff;
+    }
+    .shape-btn.active, .material-btn.active {
+        border-color: #fff;
+    }
+    .shape-btn:hover, .material-btn:hover {
+        background-color: rgba(255,255,255,0.1);
     }
 
     #recordBtn.recording {
@@ -195,11 +255,11 @@
         z-index: 9;
         pointer-events: none;
     }
-    #signature-left {
-        left: 15px;
-    }
     #signature-right {
         right: 15px;
+    }
+    #signature-left {
+        left: 15px;
     }
 
   </style>
@@ -209,44 +269,36 @@
   <video id="video" autoplay playsinline muted></video>
   <canvas id="segmentation-canvas" class="processing-canvas"></canvas>
  
-  <!-- Main control panel for effects -->
-  <div id="controls" class="control-panel">
-    <div id="main-controls" class="hidden">
+  <!-- Top Left Controls -->
+  <div id="top-left-controls" class="control-panel">
+      <button id="recordBtn" class="control-button" title="הקלטה">🔴</button>
+  </div>
+
+  <!-- Top Right Controls -->
+  <div id="top-right-controls" class="control-panel">
+      <button id="camera-switch" class="control-button" title="החלף מצלמה">🔄</button>
+  </div>
+  
+  <!-- Top Center Controls -->
+  <div id="top-controls" class="control-panel">
+      <div id="main-controls" class="hidden">
         <div class="control-item-col">
+            <span id="densityValue" class="slider-value"></span>
             <label for="densitySlider">צפיפות</label>
             <input type="range" id="densitySlider" min="5" max="35" value="25" title="צפיפות">
         </div>
-        
         <div class="control-item-col">
-            <label>צורה</label>
-            <div id="shape-selector">
-                <button id="current-shape-btn" class="control-button" title="שנה צורה"></button>
-                <div id="shape-options">
-                    <button class="shape-btn control-button" data-shape="box" title="קובייה"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 4.5H19.5V19.5H4.5V4.5M6 6V18H18V6H6Z"></path></svg></button>
-                    <button class="shape-btn control-button" data-shape="sphere" title="כדור"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 1 0 22 12A10 10 0 0 0 12 2Z"></path></svg></button>
-                    <button class="shape-btn control-button" data-shape="cone" title="חרוט"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2L4 22H20L12 2Z"></path></svg></button>
-                    <button class="shape-btn control-button" data-shape="torus" title="טורוס"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 6A6 6 0 1 0 18 12A6 6 0 0 0 12 6M12 4A8 8 0 1 1 4 12A8 8 0 0 1 12 4Z"></path></svg></button>
-                    <button class="shape-btn control-button" data-shape="cylinder" title="גליל"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12,2C9.24,2 7,4.24 7,7V17C7,19.76 9.24,22 12,22C14.76,22 17,19.76 17,17V7C17,4.24 14.76,2 12,2Z"></path></svg></button>
-                    <button class="shape-btn control-button" data-shape="tetrahedron" title="פירמידה"><svg viewBox="0 0 24 24"><path fill="currentColor" d="m12 2l-10 18h20l-10-18zm0 4.63l5.18 9.37h-10.36l5.18-9.37z"></path></svg></button>
-                    <button class="shape-btn control-button" data-shape="octahedron" title="אוקטהדרון"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2L2 12L12 22L22 12L12 2Z"></path></svg></button>
-                    <button class="shape-btn control-button" data-shape="dodecahedron" title="דודקהדרון"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.5L5.5 7L2 15.5L8.5 20L15.5 20L22 15.5L18.5 7L12 2.5Z"></path></svg></button>
-                    <button class="shape-btn control-button" data-shape="icosahedron" title="איקוסהדרון"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 1L2 9L12 23L22 9L12 1Z"></path></svg></button>
-                    <button class="shape-btn control-button" data-shape="nail" title="מסמר"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M13.6 2.6L12.19 4L13.6 5.41L14.21 4.79L15.62 6.2L14.21 7.61L15.62 9L14.21 10.41L15.62 11.82L14.21 13.24L15.62 14.65L14.21 16.06L15.62 17.47L12.83 20.27L11.41 18.85L18.41 11.85L13.6 7.03L11.41 9.22L10 7.81L11.41 6.39L10 4.97L11.41 3.56L10 2.15L11.41 0.73L13.6 2.6Z"></path></svg></button>
-                </div>
-            </div>
-        </div>
-
-        <div class="control-item-col">
+            <span id="forceValue" class="slider-value"></span>
             <label for="forceSlider">תזוזה</label>
-            <input type="range" id="forceSlider" min="1" max="50" value="20" step="1" title="תזוזה">
+            <input type="range" id="forceSlider" min="1" max="50" value="8" step="1" title="תזוזה">
         </div>
         <div class="control-item-col">
+            <span id="depthValue" class="slider-value"></span>
             <label for="depthSlider">עובי צורה</label>
-            <input type="range" id="depthSlider" min="0.1" max="50" value="15" step="0.5" title="עובי צורה">
+            <input type="range" id="depthSlider" min="0.1" max="50" value="10" step="0.5" title="עובי צורה">
         </div>
-        <button id="recordBtn" class="control-button" title="הקלטה">🔴</button>
-    </div>
-    <button id="toggleControlsBtn" class="control-button" title="הצג/הסתר תפריט">
+      </div>
+      <button id="toggleControlsBtn" class="control-button" title="הצג/הסתר תפריט">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="3" y1="12" x2="21" y2="12"></line>
             <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -254,27 +306,72 @@
         </svg>
     </button>
   </div>
+
+  <!-- Left Side Controls -->
+  <div id="left-side-controls" class="control-panel">
+      <button id="toggleMaterialsBtn" class="control-button" title="הצג/הסתר חומרים">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      <div id="material-gallery" class="hidden">
+          <button class="material-btn control-button" data-material="chrome" title="כרום"><svg viewBox="0 0 24 24"><path fill="currentColor" style="color: #c0c0c0;" d="M12 2A10 10 0 1 0 22 12A10 10 0 0 0 12 2m-4 6a1 1 0 0 1 1-1h6a1 1 0 0 1 0 2H9a1 1 0 0 1-1-1Z"/></svg></button>
+          <button class="material-btn control-button" data-material="gold" title="זהב"><svg viewBox="0 0 24 24"><path fill="currentColor" style="color: #ffd700;" d="M12 2A10 10 0 1 0 22 12A10 10 0 0 0 12 2m-4 6a1 1 0 0 1 1-1h6a1 1 0 0 1 0 2H9a1 1 0 0 1-1-1Z"/></svg></button>
+          <button class="material-btn control-button active" data-material="matte" title="מט"><svg viewBox="0 0 24 24"><path fill="currentColor" style="color: #ffffff;" d="M12 2A10 10 0 1 0 22 12A10 10 0 0 0 12 2Z"></path></svg></button>
+          <button class="material-btn control-button" data-material="glossy" title="מבריק"><svg viewBox="0 0 24 24"><path fill="currentColor" style="color: #e0e0ff;" d="M12 2A10 10 0 1 0 22 12A10 10 0 0 0 12 2m-4 6a1 1 0 0 1 1-1h6a1 1 0 0 1 0 2H9a1 1 0 0 1-1-1Z"/></svg></button>
+          <button class="material-btn control-button" data-material="crystal" title="קריסטל"><svg viewBox="0 0 24 24"><path fill="currentColor" style="color: #add8e6;" d="M12 2L2 12l10 10 10-12L12 2zm0 2.83L17.17 12 12 17.17 6.83 12 12 4.83z"/></svg></button>
+      </div>
+  </div>
+
+  <!-- Right Side Controls -->
+  <div id="side-controls" class="control-panel">
+      <button id="toggleShapesBtn" class="control-button" title="הצג/הסתר צורות">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      <div id="shape-gallery" class="hidden">
+          <button class="shape-btn control-button active" data-shape="box" title="קובייה"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 4.5H19.5V19.5H4.5V4.5M6 6V18H18V6H6Z"></path></svg></button>
+          <button class="shape-btn control-button" data-shape="sphere" title="כדור"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 1 0 22 12A10 10 0 0 0 12 2Z"></path></svg></button>
+          <button class="shape-btn control-button" data-shape="cone" title="חרוט"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2L4 22H20L12 2Z"></path></svg></button>
+          <button class="shape-btn control-button" data-shape="torus" title="טורוס"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 6A6 6 0 1 0 18 12A6 6 0 0 0 12 6M12 4A8 8 0 1 1 4 12A8 8 0 0 1 12 4Z"></path></svg></button>
+          <button class="shape-btn control-button" data-shape="cylinder" title="גליל"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12,2C9.24,2 7,4.24 7,7V17C7,19.76 9.24,22 12,22C14.76,22 17,19.76 17,17V7C17,4.24 14.76,2 12,2Z"></path></svg></button>
+          <button class="shape-btn control-button" data-shape="tetrahedron" title="פירמידה"><svg viewBox="0 0 24 24"><path fill="currentColor" d="m12 2l-10 18h20l-10-18zm0 4.63l5.18 9.37h-10.36l5.18-9.37z"></path></svg></button>
+          <button class="shape-btn control-button" data-shape="octahedron" title="אוקטהדרון"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2L2 12L12 22L22 12L12 2Z"></path></svg></button>
+          <button class="shape-btn control-button" data-shape="dodecahedron" title="דודקהדרון"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.5L5.5 7L2 15.5L8.5 20L15.5 20L22 15.5L18.5 7L12 2.5Z"></path></svg></button>
+          <button class="shape-btn control-button" data-shape="icosahedron" title="איקוסהדרון"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 1L2 9L12 23L22 9L12 1Z"></path></svg></button>
+          <button class="shape-btn control-button" data-shape="nail" title="מסמר"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M13.6 2.6L12.19 4L13.6 5.41L14.21 4.79L15.62 6.2L14.21 7.61L15.62 9L14.21 10.41L15.62 11.82L14.21 13.24L15.62 14.65L14.21 16.06L15.62 17.47L12.83 20.27L11.41 18.85L18.41 11.85L13.6 7.03L11.41 9.22L10 7.81L11.41 6.39L10 4.97L11.41 3.56L10 2.15L11.41 0.73L13.6 2.6Z"></path></svg></button>
+      </div>
+  </div>
+
+  <!-- Bottom Center Controls -->
+  <div id="bottom-controls" class="control-panel">
+      <div class="control-item-col">
+          <label for="hueSlider">גוון</label>
+          <input type="range" id="hueSlider" min="0" max="360" value="0" title="שינוי גוון">
+      </div>
+  </div>
   
-  <!-- Button to switch between front and back cameras -->
-  <button id="camera-switch" class="control-panel" title="החלף מצלמה">🔄</button>
-  
-  <!-- Signature elements -->
-  <div id="signature-left" class="signature">BY Oren Gamchi</div>
+  <div id="signature-left" class="signature">WOW CAM</div>
   <div id="signature-right" class="signature">BY Oren Gamchi</div>
 
-  <!-- Third-party libraries -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
 
   <script>
-    // --- Global constants and variables ---
-    let GRID_DENSITY = 20, EXPLOSION_FORCE = 20, SHAPE_DEPTH = 15, MOTION_THRESHOLD = 20;
+    // --- Global Settings ---
+    let GRID_DENSITY = 15, EXPLOSION_FORCE = 8, SHAPE_DEPTH = 10, MOTION_THRESHOLD = 20;
     const RESTORE_SPEED = 0.05, DAMPING = 0.85;
     const ROTATION_FORCE = 0.2, ROTATIONAL_DAMPING = 0.95;
 
-    // DOM element references
+    // --- DOM Elements ---
     const video = document.getElementById('video'),
           cameraSwitchBtn = document.getElementById('camera-switch'),
           densitySlider = document.getElementById('densitySlider'),
@@ -282,35 +379,58 @@
           depthSlider = document.getElementById('depthSlider'),
           toggleControlsBtn = document.getElementById('toggleControlsBtn'),
           mainControls = document.getElementById('main-controls'),
-          shapeSelector = document.getElementById('shape-selector'),
-          currentShapeBtn = document.getElementById('current-shape-btn'),
-          shapeOptions = document.getElementById('shape-options'),
-          recordBtn = document.getElementById('recordBtn');
+          shapeGallery = document.getElementById('shape-gallery'),
+          toggleShapesBtn = document.getElementById('toggleShapesBtn'),
+          materialGallery = document.getElementById('material-gallery'),
+          toggleMaterialsBtn = document.getElementById('toggleMaterialsBtn'),
+          recordBtn = document.getElementById('recordBtn'),
+          hueSlider = document.getElementById('hueSlider'),
+          densityValue = document.getElementById('densityValue'),
+          forceValue = document.getElementById('forceValue'),
+          depthValue = document.getElementById('depthValue');
     
-    // Canvases for processing
+    // --- Canvas & Contexts ---
     const segmentationCanvas = document.getElementById('segmentation-canvas');
     const segmentationCtx = segmentationCanvas.getContext('2d', { willReadFrequently: true });
     const offscreenCanvas = document.createElement('canvas');
     const offscreenCtx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
-    // --- ADDED: High-resolution canvas for a sharper mask ---
     const highResMaskCanvas = document.createElement('canvas');
     const highResMaskCtx = highResMaskCanvas.getContext('2d');
 
+    // --- Materials Definition ---
+    const materials = {
+        chrome: { color: 0xffffff, metalness: 1.0, roughness: 0.1 },
+        gold: { color: 0xffd700, metalness: 0.8, roughness: 0.2 },
+        matte: { color: 0xffffff, metalness: 0.1, roughness: 0.8 },
+        glossy: { color: 0xffffff, metalness: 0.2, roughness: 0.1 },
+        crystal: { color: 0xffffff, metalness: 0.1, roughness: 0.0, transparent: true, opacity: 0.3, transmission: 0.95 }
+    };
 
-    // State variables
+    // --- State Variables ---
     let shapes = [], currentStream, prevFrameData = null,
         currentFacingMode = 'environment',
         currentShape = 'box',
+        currentMaterialKey = 'matte',
         worldWidth, worldHeight, grid,
         isProcessing = false,
         lastSegmentationResults = null,
         videoTexture, videoBackgroundPlane, particleGroup,
         mediaRecorder, recordedChunks = [],
-        maskPlane, alphaTexture;
+        maskPlane, alphaTexture,
+        originalRecordingState = null,
+        totalWorldWidth, totalWorldHeight;
 
-    // --- Three.js setup ---
+    // --- Physics & Particle System ---
+    let physicsWorld;
+    const particlePool = [];
+    let fallingParticlesGroup;
+    const MAX_FALLING_PARTICLES = 500;
+    const PARTICLE_LIFESPAN = 1000; // 1 second in ms
+    const PARTICLE_SPAWN_RATE = 0.2; // Chance to spawn a particle per frame per grid cell
+
+    // --- Three.js Setup ---
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000); // Increased far plane
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
     
     renderer.shadowMap.enabled = true;
@@ -326,15 +446,15 @@
     controls.autoRotateSpeed = 0.5;
     controls.update();
 
-    // Lighting
+    // --- Lighting ---
     scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.4);
     directionalLight.position.set(20, 20, 50);
     directionalLight.castShadow = true;
     camera.add(directionalLight);
     scene.add(camera);
 
-    // --- MediaPipe Setup ---
+    // --- MediaPipe Selfie Segmentation ---
     const selfieSegmentation = new SelfieSegmentation({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`});
     selfieSegmentation.setOptions({ modelSelection: 1 });
     selfieSegmentation.onResults(results => {
@@ -348,16 +468,22 @@
         await selfieSegmentation.send({image: video});
     }
 
-    // --- Core functions ---
+    // --- Physics Setup ---
+    function initPhysics() {
+        physicsWorld = new CANNON.World();
+        physicsWorld.gravity.set(0, -98.2, 0); 
+    }
 
+    // --- Scene Objects ---
     function createFloor() {
-        grid = new THREE.GridHelper(2000, 200, 0xffffff, 0xffffff); // Increased grid size
+        grid = new THREE.GridHelper(4000, 400, 0xffffff, 0xffffff);
         const colors = new Float32Array(grid.geometry.attributes.position.count * 3);
         grid.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
         grid.material = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.3 });
         scene.add(grid);
     }
 
+    // --- Camera & Initialization ---
     async function setupCamera(facingMode) {
       if (currentStream) currentStream.getTracks().forEach(track => track.stop());
       try {
@@ -374,17 +500,17 @@
       } catch (e) {
         console.error("Camera setup failed:", e);
         if (facingMode === 'environment') {
-            alert('מצלמה אחורית לא נמצאה, עובר למצלמה קדמית.');
+            console.warn('Rear camera not found, switching to front camera.');
             currentFacingMode = 'user';
             await setupCamera('user');
         } else {
-            alert('לא ניתן לגשת למצלמה.');
+            console.error('Could not access any camera.');
         }
       }
     }
     
     function resizeAndInit() {
-      if (!video.videoWidth || !video.videoHeight) return; // Wait for video metadata
+      if (!video.videoWidth || !video.videoHeight) return;
       const aspectRatio = video.videoWidth / video.videoHeight;
       if (window.innerWidth / window.innerHeight > aspectRatio) {
         worldHeight = 500;
@@ -393,7 +519,6 @@
         worldWidth = 500;
         worldHeight = worldWidth / aspectRatio;
       }
-      // --- ADDED: Set size for the high-resolution mask canvas ---
       highResMaskCanvas.width = 512;
       highResMaskCanvas.height = 512 / aspectRatio;
       initShapes();
@@ -434,8 +559,10 @@
         if (videoBackgroundPlane) particleGroup.remove(videoBackgroundPlane);
         if (maskPlane) particleGroup.remove(maskPlane);
         
-
-        const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0.6 });
+        const material = new THREE.MeshStandardMaterial(materials[currentMaterialKey]);
+        if (videoTexture && (currentMaterialKey === 'chrome' || currentMaterialKey === 'gold')) {
+            material.envMap = videoTexture;
+        }
         const geometry = createGeometry();
         
         const borderSize = 10;
@@ -449,31 +576,172 @@
         
         const totalGridW = gridW + borderSize * 2;
         const totalGridH = gridH + borderSize * 2;
-        const totalWorldWidth = totalGridW * GRID_DENSITY;
-        const totalWorldHeight = totalGridH * GRID_DENSITY;
+        totalWorldWidth = totalGridW * GRID_DENSITY;
+        totalWorldHeight = totalGridH * GRID_DENSITY;
 
         if(grid) grid.position.y = - (totalWorldHeight / 2) - 50;
         
         const planeGeo = new THREE.PlaneGeometry(worldWidth, worldHeight);
         
-        const planeMat = new THREE.MeshBasicMaterial({ 
-            map: videoTexture,
-            side: THREE.FrontSide 
+        const videoEffectMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                u_time: { value: 0.0 },
+                u_videoTexture: { value: videoTexture },
+                u_hueShift: { value: 0.0 }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform float u_time;
+                uniform sampler2D u_videoTexture;
+                uniform float u_hueShift;
+                varying vec2 vUv;
+
+                // HSL <-> RGB Functions
+                vec3 rgb2hsl(vec3 color) {
+                    float maxC = max(color.r, max(color.g, color.b));
+                    float minC = min(color.r, min(color.g, color.b));
+                    float h = 0.0, s = 0.0, l = (maxC + minC) / 2.0;
+
+                    if (maxC != minC) {
+                        float d = maxC - minC;
+                        s = l > 0.5 ? d / (2.0 - maxC - minC) : d / (maxC + minC);
+                        if (maxC == color.r) h = (color.g - color.b) / d + (color.g < color.b ? 6.0 : 0.0);
+                        else if (maxC == color.g) h = (color.b - color.r) / d + 2.0;
+                        else h = (color.r - color.g) / d + 4.0;
+                        h /= 6.0;
+                    }
+                    return vec3(h, s, l);
+                }
+
+                float hue2rgb(float p, float q, float t) {
+                    if (t < 0.0) t += 1.0;
+                    if (t > 1.0) t -= 1.0;
+                    if (t < 1.0/6.0) return p + (q - p) * 6.0 * t;
+                    if (t < 1.0/2.0) return q;
+                    if (t < 2.0/3.0) return p + (q - p) * (2.0/3.0 - t) * 6.0;
+                    return p;
+                }
+
+                vec3 hsl2rgb(vec3 hsl) {
+                    float h = hsl.x;
+                    float s = hsl.y;
+                    float l = hsl.z;
+                    if (s == 0.0) return vec3(l);
+                    float q = l < 0.5 ? l * (1.0 + s) : l + s - l * s;
+                    float p = 2.0 * l - q;
+                    return vec3(hue2rgb(p, q, h + 1.0/3.0), hue2rgb(p, q, h), hue2rgb(p, q, h - 1.0/3.0));
+                }
+
+                void main() {
+                    vec4 videoColor = texture2D(u_videoTexture, vUv);
+                    
+                    vec3 effectColor;
+                    effectColor.r = sin(vUv.x * 15.0 + u_time * 2.0) * 0.5 + 0.5;
+                    effectColor.g = sin(vUv.y * 15.0 + u_time * 1.5) * 0.5 + 0.5;
+                    effectColor.b = sin((vUv.x + vUv.y) * 15.0 + u_time) * 0.5 + 0.5;
+
+                    vec3 finalColor = videoColor.rgb + effectColor * 0.3;
+                    
+                    vec3 hsl = rgb2hsl(finalColor);
+                    hsl.x = mod(hsl.x + u_hueShift, 1.0);
+                    vec3 shiftedColor = hsl2rgb(hsl);
+
+                    gl_FragColor = vec4(shiftedColor, 1.0);
+                }
+            `,
+            side: THREE.FrontSide
         });
-        videoBackgroundPlane = new THREE.Mesh(planeGeo, planeMat);
+        videoBackgroundPlane = new THREE.Mesh(planeGeo, videoEffectMaterial);
         videoBackgroundPlane.position.z = 0;
         particleGroup.add(videoBackgroundPlane);
 
-        // --- CHANGED: Use the new high-res canvas for the alpha texture ---
         alphaTexture = new THREE.CanvasTexture(highResMaskCanvas);
         
-        const maskMaterial = new THREE.MeshBasicMaterial({
-            map: videoTexture,
-            alphaMap: alphaTexture,
+        const maskEffectMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                u_time: { value: 0.0 },
+                u_videoTexture: { value: videoTexture },
+                u_alphaMap: { value: alphaTexture },
+                u_hueShift: { value: 0.0 }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform float u_time;
+                uniform sampler2D u_videoTexture;
+                uniform sampler2D u_alphaMap;
+                uniform float u_hueShift;
+                varying vec2 vUv;
+
+                // HSL <-> RGB Functions (same as above)
+                vec3 rgb2hsl(vec3 color) {
+                    float maxC = max(color.r, max(color.g, color.b));
+                    float minC = min(color.r, min(color.g, color.b));
+                    float h = 0.0, s = 0.0, l = (maxC + minC) / 2.0;
+
+                    if (maxC != minC) {
+                        float d = maxC - minC;
+                        s = l > 0.5 ? d / (2.0 - maxC - minC) : d / (maxC + minC);
+                        if (maxC == color.r) h = (color.g - color.b) / d + (color.g < color.b ? 6.0 : 0.0);
+                        else if (maxC == color.g) h = (color.b - color.r) / d + 2.0;
+                        else h = (color.r - color.g) / d + 4.0;
+                        h /= 6.0;
+                    }
+                    return vec3(h, s, l);
+                }
+
+                float hue2rgb(float p, float q, float t) {
+                    if (t < 0.0) t += 1.0;
+                    if (t > 1.0) t -= 1.0;
+                    if (t < 1.0/6.0) return p + (q - p) * 6.0 * t;
+                    if (t < 1.0/2.0) return q;
+                    if (t < 2.0/3.0) return p + (q - p) * (2.0/3.0 - t) * 6.0;
+                    return p;
+                }
+
+                vec3 hsl2rgb(vec3 hsl) {
+                    float h = hsl.x;
+                    float s = hsl.y;
+                    float l = hsl.z;
+                    if (s == 0.0) return vec3(l);
+                    float q = l < 0.5 ? l * (1.0 + s) : l + s - l * s;
+                    float p = 2.0 * l - q;
+                    return vec3(hue2rgb(p, q, h + 1.0/3.0), hue2rgb(p, q, h), hue2rgb(p, q, h - 1.0/3.0));
+                }
+
+                void main() {
+                    vec4 videoColor = texture2D(u_videoTexture, vUv);
+                    float alpha = texture2D(u_alphaMap, vUv).r;
+                    
+                    vec3 effectColor;
+                    effectColor.r = sin(vUv.x * 15.0 + u_time * 2.0) * 0.5 + 0.5;
+                    effectColor.g = sin(vUv.y * 15.0 + u_time * 1.5) * 0.5 + 0.5;
+                    effectColor.b = sin((vUv.x + vUv.y) * 15.0 + u_time) * 0.5 + 0.5;
+
+                    vec3 finalColor = videoColor.rgb + effectColor * 0.3;
+
+                    vec3 hsl = rgb2hsl(finalColor);
+                    hsl.x = mod(hsl.x + u_hueShift, 1.0);
+                    vec3 shiftedColor = hsl2rgb(hsl);
+
+                    gl_FragColor = vec4(shiftedColor, alpha);
+                }
+            `,
             transparent: true,
             side: THREE.BackSide
         });
-        maskPlane = new THREE.Mesh(planeGeo.clone(), maskMaterial);
+        maskPlane = new THREE.Mesh(planeGeo.clone(), maskEffectMaterial);
         particleGroup.add(maskPlane);
 
 
@@ -510,15 +778,62 @@
         prevFrameData = null;
     }
 
+    function createParticlePool() {
+        if (fallingParticlesGroup) {
+            scene.remove(fallingParticlesGroup);
+        }
+        fallingParticlesGroup = new THREE.Group();
+        scene.add(fallingParticlesGroup);
+
+        const particleGeo = new THREE.SphereGeometry(2, 8, 8);
+        const particleMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        
+        for (let i = 0; i < MAX_FALLING_PARTICLES; i++) {
+            const mesh = new THREE.Mesh(particleGeo, particleMat.clone());
+            mesh.visible = false;
+            fallingParticlesGroup.add(mesh);
+
+            const body = new CANNON.Body({ mass: 0.1, shape: new CANNON.Sphere(2) });
+            body.sleep();
+            physicsWorld.addBody(body);
+
+            particlePool.push({
+                mesh,
+                body,
+                active: false,
+                creationTime: 0
+            });
+        }
+    }
+
+    function spawnParticle(x, y, z, color) {
+        const particle = particlePool.find(p => !p.active);
+        if (particle) {
+            particle.active = true;
+            particle.creationTime = Date.now();
+            
+            particle.mesh.visible = true;
+            particle.mesh.material.color.set(color);
+            
+            particle.body.position.set(x, y, z);
+            particle.body.velocity.set(0, 0, 0);
+            particle.body.angularVelocity.set(0, 0, 0);
+            particle.body.wakeUp();
+        }
+    }
+
+    // --- Animation & Physics ---
     function animationLoop() {
       requestAnimationFrame(animationLoop);
-      const time = Date.now() * 0.0005;
+      const time = Date.now();
+      const timeSeconds = time * 0.001;
       
       processFrame();
       
       if(grid) {
-        const color1 = new THREE.Color().setHSL(time % 1, 0.7, 0.5);
-        const color2 = new THREE.Color().setHSL((time + 0.3) % 1, 0.8, 0.5);
+        const colorTime = time * 0.0005;
+        const color1 = new THREE.Color().setHSL(colorTime % 1, 0.7, 0.5);
+        const color2 = new THREE.Color().setHSL((colorTime + 0.3) % 1, 0.8, 0.5);
         const colors = grid.geometry.attributes.color.array;
         for (let i = 0; i < colors.length; i += 3) {
             const color = (i % 6 === 0) ? color1 : color2;
@@ -528,10 +843,36 @@
         }
         grid.geometry.attributes.color.needsUpdate = true;
       }
+
+      if (physicsWorld) {
+          physicsWorld.step(1/60);
+      }
+      
+      if (videoBackgroundPlane && videoBackgroundPlane.material.uniforms) {
+          videoBackgroundPlane.material.uniforms.u_time.value = timeSeconds;
+      }
+      if (maskPlane && maskPlane.material.uniforms) {
+          maskPlane.material.uniforms.u_time.value = timeSeconds;
+      }
+
+      // Update falling particles
+      particlePool.forEach(particle => {
+          if (particle.active) {
+              particle.mesh.position.copy(particle.body.position);
+              particle.mesh.quaternion.copy(particle.body.quaternion);
+
+              if (time - particle.creationTime > PARTICLE_LIFESPAN) {
+                  particle.active = false;
+                  particle.mesh.visible = false;
+                  particle.body.sleep();
+                  particle.body.position.set(0, -1000, 0); // Move away
+              }
+          }
+      });
       
       if (lastSegmentationResults) updateSceneState();
       updatePhysics();
-      controls.update(); // Required for auto-rotation to work
+      controls.update();
       renderer.render(scene, camera);
     }
     
@@ -551,17 +892,15 @@
     function updateSceneState() {
         if (!lastSegmentationResults || !alphaTexture) return;
 
-        // --- REPLACED: Logic to create the inverted mask now uses the high-res canvas for a sharp cut ---
         highResMaskCtx.save();
         highResMaskCtx.clearRect(0, 0, highResMaskCanvas.width, highResMaskCanvas.height);
         highResMaskCtx.drawImage(lastSegmentationResults.segmentationMask, 0, 0, highResMaskCanvas.width, highResMaskCanvas.height);
-        highResMaskCtx.globalCompositeOperation = 'xor';
+        highResMaskCtx.globalCompositeOperation = 'xor'; 
         highResMaskCtx.fillStyle = 'white';
         highResMaskCtx.fillRect(0, 0, highResMaskCanvas.width, highResMaskCanvas.height);
         highResMaskCtx.restore();
         alphaTexture.needsUpdate = true;
 
-        // --- This low-res part is for the particles only ---
         segmentationCtx.save();
         segmentationCtx.clearRect(0, 0, segmentationCanvas.width, segmentationCanvas.height);
         segmentationCtx.drawImage(lastSegmentationResults.segmentationMask, 0, 0, segmentationCanvas.width, segmentationCanvas.height);
@@ -581,7 +920,7 @@
             if (!shape.userData.isVideoShape) continue;
             
             const dataIndex = shape.userData.dataIndex;
-            const isPerson = segmentationData[dataIndex] > 128;
+            const isPerson = segmentationData[dataIndex] > 128; 
 
             shape.visible = isPerson;
 
@@ -589,7 +928,15 @@
                 const r = currentFrameData[dataIndex];
                 const g = currentFrameData[dataIndex + 1];
                 const b = currentFrameData[dataIndex + 2];
-                shape.material.color.setRGB(r / 255, g / 255, b / 255);
+                const color = new THREE.Color(r / 255, g / 255, b / 255);
+                if (currentMaterialKey !== 'gold') { 
+                    shape.material.color.set(color);
+                }
+
+                // Spawn falling particles
+                if (Math.random() < PARTICLE_SPAWN_RATE) {
+                    spawnParticle(shape.position.x, shape.position.y, shape.position.z, color);
+                }
 
                 if (prevFrameData) {
                     const diff = Math.abs(r - prevFrameData[dataIndex]) + Math.abs(g - prevFrameData[dataIndex+1]) + Math.abs(b - prevFrameData[dataIndex+2]);
@@ -603,41 +950,72 @@
         prevFrameData = currentFrameData;
     }
 
+    // --- UI Handlers ---
     function updateCurrentShapeIcon() {
-        const shapeButton = shapeOptions.querySelector(`.shape-btn[data-shape="${currentShape}"]`);
-        if (shapeButton) {
-            currentShapeBtn.innerHTML = shapeButton.innerHTML;
-        }
+        document.querySelectorAll('#shape-gallery .shape-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.shape === currentShape);
+        });
     }
 
-    // --- Recording Logic ---
+    function updateCurrentMaterialIcon() {
+        document.querySelectorAll('#material-gallery .material-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.material === currentMaterialKey);
+        });
+    }
+    
+    function updateSliderValues() {
+        densityValue.textContent = (40 - parseInt(densitySlider.value));
+        forceValue.textContent = forceSlider.value;
+        depthValue.textContent = depthSlider.value;
+    }
+
+    // --- Recording ---
     function startRecording() {
-        recordedChunks = [];
-        const stream = renderer.domElement.captureStream(30); // 30 fps
-        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
-
-        mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-                recordedChunks.push(event.data);
-            }
+        originalRecordingState = {
+            width: window.innerWidth,
+            height: window.innerHeight,
+            aspect: camera.aspect
         };
 
-        mediaRecorder.onstop = () => {
-            const blob = new Blob(recordedChunks, { type: 'video/webm' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = 'wowow-cam-recording.webm';
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        };
+        const recordSize = { width: 3840, height: 2160 }; 
 
-        mediaRecorder.start();
-        recordBtn.classList.add('recording');
-        recordBtn.title = "עצור הקלטה";
+        renderer.setSize(recordSize.width, recordSize.height);
+        camera.aspect = recordSize.width / recordSize.height;
+        camera.updateProjectionMatrix();
+        
+        setTimeout(() => {
+            recordedChunks = [];
+            const stream = renderer.domElement.captureStream(30); 
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'wowow-cam-recording.webm';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                renderer.setSize(originalRecordingState.width, originalRecordingState.height);
+                camera.aspect = originalRecordingState.aspect;
+                camera.updateProjectionMatrix();
+                originalRecordingState = null;
+            };
+
+            mediaRecorder.start();
+            recordBtn.classList.add('recording');
+            recordBtn.title = "עצור הקלטה";
+        }, 100);
     }
 
     function stopRecording() {
@@ -651,10 +1029,34 @@
       currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
       setupCamera(currentFacingMode);
     });
-    densitySlider.addEventListener('input', () => { GRID_DENSITY = 40 - parseInt(densitySlider.value); resizeAndInit(); });
-    forceSlider.addEventListener('input', (e) => EXPLOSION_FORCE = parseFloat(e.target.value));
-    depthSlider.addEventListener('input', (e) => { SHAPE_DEPTH = parseFloat(e.target.value); resizeAndInit(); });
+    densitySlider.addEventListener('input', () => { 
+        GRID_DENSITY = 40 - parseInt(densitySlider.value); 
+        updateSliderValues(); 
+        resizeAndInit(); 
+    });
+    forceSlider.addEventListener('input', (e) => { 
+        EXPLOSION_FORCE = parseFloat(e.target.value); 
+        updateSliderValues(); 
+    });
+    depthSlider.addEventListener('input', (e) => { 
+        SHAPE_DEPTH = parseFloat(e.target.value); 
+        updateSliderValues(); 
+        resizeAndInit(); 
+    });
     toggleControlsBtn.addEventListener('click', () => mainControls.classList.toggle('hidden'));
+    toggleShapesBtn.addEventListener('click', () => shapeGallery.classList.toggle('hidden'));
+    toggleMaterialsBtn.addEventListener('click', () => materialGallery.classList.toggle('hidden'));
+    
+    hueSlider.addEventListener('input', (e) => {
+        const hueValue = parseFloat(e.target.value) / 360.0; // Normalize to 0-1
+        if (videoBackgroundPlane && videoBackgroundPlane.material.uniforms) {
+            videoBackgroundPlane.material.uniforms.u_hueShift.value = hueValue;
+        }
+        if (maskPlane && maskPlane.material.uniforms) {
+            maskPlane.material.uniforms.u_hueShift.value = hueValue;
+        }
+    });
+
     recordBtn.addEventListener('click', () => {
         if (mediaRecorder && mediaRecorder.state === 'recording') {
             stopRecording();
@@ -663,38 +1065,39 @@
         }
     });
     
-    // Shape selector listeners
-    currentShapeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        shapeSelector.classList.toggle('expanded');
+    materialGallery.addEventListener('click', (e) => {
+        const button = e.target.closest('.material-btn');
+        if (!button) return;
+        currentMaterialKey = button.dataset.material;
+        updateCurrentMaterialIcon();
+        initShapes();
     });
-
-    shapeOptions.addEventListener('click', (e) => {
+    
+    shapeGallery.addEventListener('click', (e) => {
         const button = e.target.closest('.shape-btn');
         if (!button) return;
         currentShape = button.dataset.shape;
         updateCurrentShapeIcon();
-        resizeAndInit();
-        shapeSelector.classList.remove('expanded');
-    });
-
-    window.addEventListener('click', () => {
-        if (shapeSelector.classList.contains('expanded')) {
-            shapeSelector.classList.remove('expanded');
-        }
+        initShapes();
     });
 
     window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        resizeAndInit();
+        if (!originalRecordingState) { 
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            resizeAndInit();
+        }
     });
 
-    // --- Initial setup ---
+    // --- Main Initialization Function ---
     async function initialize() {
+        initPhysics();
+        createParticlePool();
         createFloor();
         updateCurrentShapeIcon();
+        updateCurrentMaterialIcon();
+        updateSliderValues();
         await selfieSegmentation.initialize();
         await setupCamera(currentFacingMode);
         animationLoop();

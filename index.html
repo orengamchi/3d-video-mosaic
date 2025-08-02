@@ -44,6 +44,8 @@
         top: 20px;
         left: 50%;
         transform: translateX(-50%);
+        flex-direction: column;
+        gap: 10px;
     }
     
     /* Top-left controls container */
@@ -55,7 +57,8 @@
     /* Top-right controls container */
     #top-right-controls {
         top: 20px;
-        right: 20px;
+        right: 10px; /* Closer to the edge */
+        position: relative; /* Positioning context for the tooltip */
     }
 
     /* Side controls container (Right) */
@@ -79,6 +82,8 @@
         bottom: 20px;
         left: 50%;
         transform: translateX(-50%);
+        flex-direction: column-reverse;
+        gap: 10px;
     }
 
 
@@ -92,6 +97,9 @@
       }
       #bottom-controls {
         bottom: 80px;
+      }
+      #main-controls, #main-bottom-controls {
+        transform: scale(0.8);
       }
     }
 
@@ -113,10 +121,10 @@
     }
     
     /* Controls container for toggling */
-    #main-controls, #shape-gallery, #material-gallery {
+    #main-controls, #shape-gallery, #material-gallery, #main-bottom-controls {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 15px;
         transition: all 0.5s ease;
     }
     
@@ -135,7 +143,7 @@
     }
 
     /* Hidden state for main controls */
-    #main-controls.hidden {
+    #main-controls.hidden, #main-bottom-controls.hidden {
         max-width: 0;
         opacity: 0;
         overflow: hidden;
@@ -199,16 +207,16 @@
         opacity: 1;
     }
 
-    #toggleControlsBtn, #toggleShapesBtn, #toggleMaterialsBtn {
+    #toggleControlsBtn, #toggleShapesBtn, #toggleMaterialsBtn, #toggleBottomControlsBtn {
       font-size: 20px;
       padding: 8px;
     }
     
-    #toggleControlsBtn svg, #toggleShapesBtn svg, #toggleMaterialsBtn svg {
+    #toggleControlsBtn svg, #toggleShapesBtn svg, #toggleMaterialsBtn svg, #toggleBottomControlsBtn svg {
         color: rgba(255, 255, 255, 0.7);
         transition: color 0.2s;
     }
-    #toggleControlsBtn:hover svg, #toggleShapesBtn:hover svg, #toggleMaterialsBtn:hover svg {
+    #toggleControlsBtn:hover svg, #toggleShapesBtn:hover svg, #toggleMaterialsBtn:hover svg, #toggleBottomControlsBtn:hover svg {
         color: #fff;
     }
 
@@ -245,7 +253,15 @@
         70% { box-shadow: 0 0 0 10px rgba(255, 65, 54, 0); }
         100% { box-shadow: 0 0 0 0 rgba(255, 65, 54, 0); }
     }
-
+    
+    #record-timer {
+        color: white;
+        background: rgba(0,0,0,0.5);
+        padding: 5px 10px;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    
     /* Signature Styles */
     .signature {
         position: fixed;
@@ -268,20 +284,28 @@
   <!-- Video element to capture camera stream -->
   <video id="video" autoplay playsinline muted></video>
   <canvas id="segmentation-canvas" class="processing-canvas"></canvas>
- 
+  
   <!-- Top Left Controls -->
   <div id="top-left-controls" class="control-panel">
       <button id="recordBtn" class="control-button" title="הקלטה">🔴</button>
+      <span id="record-timer" style="display: none;"></span>
   </div>
 
   <!-- Top Right Controls -->
   <div id="top-right-controls" class="control-panel">
-      <button id="camera-switch" class="control-button" title="החלף מצלמה">🔄</button>
+      <button id="camera-switch" class="control-button" title="החלף מצלמה" style="display: none;">🔄</button>
   </div>
   
   <!-- Top Center Controls -->
   <div id="top-controls" class="control-panel">
-      <div id="main-controls" class="hidden">
+      <button id="toggleControlsBtn" class="control-button" title="הצג/הסתר תפריט">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+    </button>
+    <div id="main-controls" class="hidden">
         <div class="control-item-col">
             <span id="densityValue" class="slider-value"></span>
             <label for="densitySlider">צפיפות</label>
@@ -297,14 +321,7 @@
             <label for="depthSlider">עובי צורה</label>
             <input type="range" id="depthSlider" min="0.1" max="50" value="10" step="0.5" title="עובי צורה">
         </div>
-      </div>
-      <button id="toggleControlsBtn" class="control-button" title="הצג/הסתר תפריט">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-        </svg>
-    </button>
+    </div>
   </div>
 
   <!-- Left Side Controls -->
@@ -350,10 +367,23 @@
 
   <!-- Bottom Center Controls -->
   <div id="bottom-controls" class="control-panel">
-      <div class="control-item-col">
-          <label for="hueSlider">גוון</label>
-          <input type="range" id="hueSlider" min="0" max="360" value="0" title="שינוי גוון">
+      <div id="main-bottom-controls" class="hidden">
+        <div class="control-item-col">
+            <label for="hueSlider">גוון</label>
+            <input type="range" id="hueSlider" min="0" max="360" value="0" title="שינוי גוון">
+        </div>
+       <div class="control-item-col">
+            <label for="darkenSlider">החשכה</label>
+            <input type="range" id="darkenSlider" min="0" max="1" value="0" step="0.01" title="עוצמת החשכה">
+        </div>
       </div>
+      <button id="toggleBottomControlsBtn" class="control-button" title="הצג/הסתר תפריט תחתון">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+    </button>
   </div>
   
   <div id="signature-left" class="signature">WOW CAM</div>
@@ -384,7 +414,11 @@
           materialGallery = document.getElementById('material-gallery'),
           toggleMaterialsBtn = document.getElementById('toggleMaterialsBtn'),
           recordBtn = document.getElementById('recordBtn'),
+          recordTimer = document.getElementById('record-timer'),
           hueSlider = document.getElementById('hueSlider'),
+          darkenSlider = document.getElementById('darkenSlider'),
+          toggleBottomControlsBtn = document.getElementById('toggleBottomControlsBtn'),
+          mainBottomControls = document.getElementById('main-bottom-controls'),
           densityValue = document.getElementById('densityValue'),
           forceValue = document.getElementById('forceValue'),
           depthValue = document.getElementById('depthValue');
@@ -414,9 +448,10 @@
         worldWidth, worldHeight, grid,
         isProcessing = false,
         lastSegmentationResults = null,
-        videoTexture, videoBackgroundPlane, particleGroup,
+        videoTexture, videoBackgroundPlane = null, particleGroup,
         mediaRecorder, recordedChunks = [],
-        maskPlane, alphaTexture,
+        maskPlane = null, alphaTexture,
+        recordTimeout, recordInterval,
         originalRecordingState = null,
         totalWorldWidth, totalWorldHeight;
 
@@ -476,10 +511,39 @@
 
     // --- Scene Objects ---
     function createFloor() {
-        grid = new THREE.GridHelper(4000, 400, 0xffffff, 0xffffff);
+        grid = new THREE.GridHelper(4000, 100, 0xffffff, 0xffffff);
         const colors = new Float32Array(grid.geometry.attributes.position.count * 3);
         grid.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-        grid.material = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.3 });
+
+        const gridMaterial = new THREE.ShaderMaterial({
+            vertexShader: `
+                varying vec3 vWorldPosition;
+                varying vec3 vColor;
+
+                void main() {
+                    vColor = color;
+                    vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                    vWorldPosition = worldPosition.xyz;
+                    gl_Position = projectionMatrix * viewMatrix * worldPosition;
+                }
+            `,
+            fragmentShader: `
+                varying vec3 vWorldPosition;
+                varying vec3 vColor;
+
+                void main() {
+                    float dist = length(vWorldPosition.xz);
+                    float fadeStartRadius = 350.0; // 500.0 * 0.7
+                    float maxRadius = 1400.0; // 2000.0 * 0.7
+                    float alpha = 1.0 - smoothstep(fadeStartRadius, maxRadius, dist);
+                    gl_FragColor = vec4(vColor, alpha * 0.3);
+                }
+            `,
+            vertexColors: true,
+            transparent: true
+        });
+
+        grid.material = gridMaterial;
         scene.add(grid);
     }
 
@@ -488,21 +552,36 @@
       if (currentStream) currentStream.getTracks().forEach(track => track.stop());
       try {
         currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } });
-        video.srcObject = currentStream;
-        await video.play();
-        videoTexture = new THREE.VideoTexture(video);
-        
-        videoTexture.wrapS = THREE.ClampToEdgeWrapping;
-        videoTexture.wrapT = THREE.ClampToEdgeWrapping;
 
-        GRID_DENSITY = 40 - parseInt(densitySlider.value);
-        resizeAndInit();
+        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoInputs = devices.filter(device => device.kind === 'videoinput');
+            if (videoInputs.length > 1) {
+                cameraSwitchBtn.style.display = 'flex';
+            } else {
+                cameraSwitchBtn.style.display = 'none';
+            }
+        }
+
+        video.srcObject = currentStream;
+        video.onloadedmetadata = () => {
+            video.play();
+            videoTexture = new THREE.VideoTexture(video);
+            
+            videoTexture.wrapS = THREE.ClampToEdgeWrapping;
+            videoTexture.wrapT = THREE.ClampToEdgeWrapping;
+
+            GRID_DENSITY = 40 - parseInt(densitySlider.value);
+            resizeAndInit();
+        };
+
       } catch (e) {
         console.error("Camera setup failed:", e);
+        cameraSwitchBtn.style.display = 'none';
         if (facingMode === 'environment') {
             console.warn('Rear camera not found, switching to front camera.');
             currentFacingMode = 'user';
-            await setupCamera('user');
+            setupCamera('user'); // Don't await here to avoid nested promises issues
         } else {
             console.error('Could not access any camera.');
         }
@@ -510,18 +589,32 @@
     }
     
     function resizeAndInit() {
-      if (!video.videoWidth || !video.videoHeight) return;
-      const aspectRatio = video.videoWidth / video.videoHeight;
-      if (window.innerWidth / window.innerHeight > aspectRatio) {
-        worldHeight = 500;
-        worldWidth = worldHeight * aspectRatio;
-      } else {
-        worldWidth = 500;
-        worldHeight = worldWidth / aspectRatio;
-      }
-      highResMaskCanvas.width = 512;
-      highResMaskCanvas.height = 512 / aspectRatio;
-      initShapes();
+        if (!video.videoWidth || !video.videoHeight) return;
+
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const isPortrait = window.innerHeight > window.innerWidth;
+        
+        let videoW = video.videoWidth;
+        let videoH = video.videoHeight;
+        
+        // On mobile portrait, the video stream dimensions are often swapped
+        if (isMobile && isPortrait) {
+            [videoW, videoH] = [videoH, videoW];
+        }
+
+        const aspectRatio = videoW / videoH;
+
+        if (window.innerWidth / window.innerHeight > aspectRatio) {
+            worldHeight = 500;
+            worldWidth = worldHeight * aspectRatio;
+        } else {
+            worldWidth = 500;
+            worldHeight = worldWidth / aspectRatio;
+        }
+        
+        highResMaskCanvas.width = 512;
+        highResMaskCanvas.height = 512 / aspectRatio;
+        initShapes();
     }
 
     function createGeometry() {
@@ -583,11 +676,14 @@
         
         const planeGeo = new THREE.PlaneGeometry(worldWidth, worldHeight);
         
+        const darkenValue = parseFloat(darkenSlider.value);
+
         const videoEffectMaterial = new THREE.ShaderMaterial({
             uniforms: {
                 u_time: { value: 0.0 },
                 u_videoTexture: { value: videoTexture },
-                u_hueShift: { value: 0.0 }
+                u_hueShift: { value: 0.0 },
+                u_darkenIntensity: { value: darkenValue }
             },
             vertexShader: `
                 varying vec2 vUv;
@@ -600,6 +696,7 @@
                 uniform float u_time;
                 uniform sampler2D u_videoTexture;
                 uniform float u_hueShift;
+                uniform float u_darkenIntensity;
                 varying vec2 vUv;
 
                 // HSL <-> RGB Functions
@@ -651,8 +748,10 @@
                     vec3 hsl = rgb2hsl(finalColor);
                     hsl.x = mod(hsl.x + u_hueShift, 1.0);
                     vec3 shiftedColor = hsl2rgb(hsl);
+                    
+                    vec3 finalDarkenedColor = shiftedColor * (1.0 - u_darkenIntensity);
 
-                    gl_FragColor = vec4(shiftedColor, 1.0);
+                    gl_FragColor = vec4(finalDarkenedColor, 1.0);
                 }
             `,
             side: THREE.FrontSide
@@ -734,7 +833,7 @@
                     vec3 hsl = rgb2hsl(finalColor);
                     hsl.x = mod(hsl.x + u_hueShift, 1.0);
                     vec3 shiftedColor = hsl2rgb(hsl);
-
+                    
                     gl_FragColor = vec4(shiftedColor, alpha);
                 }
             `,
@@ -895,7 +994,7 @@
         highResMaskCtx.save();
         highResMaskCtx.clearRect(0, 0, highResMaskCanvas.width, highResMaskCanvas.height);
         highResMaskCtx.drawImage(lastSegmentationResults.segmentationMask, 0, 0, highResMaskCanvas.width, highResMaskCanvas.height);
-        highResMaskCtx.globalCompositeOperation = 'xor'; 
+        highResMaskCtx.globalCompositeOperation = 'xor';
         highResMaskCtx.fillStyle = 'white';
         highResMaskCtx.fillRect(0, 0, highResMaskCanvas.width, highResMaskCanvas.height);
         highResMaskCtx.restore();
@@ -908,13 +1007,10 @@
         const segmentationData = segmentationCtx.getImageData(0, 0, segmentationCanvas.width, segmentationCanvas.height).data;
 
         offscreenCtx.save();
-        if (currentFacingMode === 'user') {
-            offscreenCtx.scale(-1, 1);
-            offscreenCtx.translate(-offscreenCanvas.width, 0);
-        }
         offscreenCtx.drawImage(video, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
         offscreenCtx.restore();
         const currentFrameData = offscreenCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height).data;
+
 
         for (const shape of shapes) {
             if (!shape.userData.isVideoShape) continue;
@@ -929,11 +1025,11 @@
                 const g = currentFrameData[dataIndex + 1];
                 const b = currentFrameData[dataIndex + 2];
                 const color = new THREE.Color(r / 255, g / 255, b / 255);
+                
                 if (currentMaterialKey !== 'gold') { 
                     shape.material.color.set(color);
                 }
 
-                // Spawn falling particles
                 if (Math.random() < PARTICLE_SPAWN_RATE) {
                     spawnParticle(shape.position.x, shape.position.y, shape.position.z, color);
                 }
@@ -971,57 +1067,90 @@
 
     // --- Recording ---
     function startRecording() {
-        originalRecordingState = {
-            width: window.innerWidth,
-            height: window.innerHeight,
-            aspect: camera.aspect
+        if (!renderer.domElement.captureStream) {
+            console.error('captureStream() not supported in this browser.');
+            recordBtn.disabled = true;
+            recordBtn.title = "הקלטה אינה נתמכת";
+            return;
+        }
+
+        recordedChunks = [];
+        const stream = renderer.domElement.captureStream(30);
+        
+        if (typeof MediaRecorder === 'undefined') {
+            console.error('MediaRecorder API not supported.');
+            recordBtn.disabled = true;
+            recordBtn.title = "הקלטה אינה נתמכת";
+            return;
+        }
+
+        const options = { mimeType: 'video/webm; codecs=vp9' };
+        try {
+            mediaRecorder = new MediaRecorder(stream, options);
+        } catch (e) {
+            console.warn(`VP9 codec not supported, falling back. Error: ${e.message}`);
+            try {
+                options.mimeType = 'video/webm; codecs=vp8';
+                mediaRecorder = new MediaRecorder(stream, options);
+            } catch (e2) {
+                console.warn(`VP8 codec not supported, falling back to default. Error: ${e2.message}`);
+                try {
+                    options.mimeType = 'video/webm';
+                    mediaRecorder = new MediaRecorder(stream, options);
+                } catch (e3) {
+                    console.error(`No supported video/webm mimeType found. Error: ${e3.message}`);
+                    recordBtn.disabled = true;
+                    recordBtn.title = "פורמט הקלטה לא נתמך";
+                    return;
+                }
+            }
+        }
+
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
         };
 
-        const recordSize = { width: 3840, height: 2160 }; 
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'wowow-cam-recording.webm';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        };
 
-        renderer.setSize(recordSize.width, recordSize.height);
-        camera.aspect = recordSize.width / recordSize.height;
-        camera.updateProjectionMatrix();
-        
-        setTimeout(() => {
-            recordedChunks = [];
-            const stream = renderer.domElement.captureStream(30); 
-            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+        mediaRecorder.start();
+        recordBtn.classList.add('recording');
+        recordBtn.title = "עצור הקלטה";
 
-            mediaRecorder.ondataavailable = (event) => {
-                if (event.data.size > 0) {
-                    recordedChunks.push(event.data);
-                }
-            };
+        let timeLeft = 20;
+        recordTimer.style.display = 'inline';
+        recordTimer.textContent = timeLeft;
 
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = 'wowow-cam-recording.webm';
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
+        recordInterval = setInterval(() => {
+            timeLeft--;
+            recordTimer.textContent = timeLeft;
+        }, 1000);
 
-                renderer.setSize(originalRecordingState.width, originalRecordingState.height);
-                camera.aspect = originalRecordingState.aspect;
-                camera.updateProjectionMatrix();
-                originalRecordingState = null;
-            };
-
-            mediaRecorder.start();
-            recordBtn.classList.add('recording');
-            recordBtn.title = "עצור הקלטה";
-        }, 100);
+        recordTimeout = setTimeout(stopRecording, 20000);
     }
 
     function stopRecording() {
-        if(mediaRecorder) mediaRecorder.stop();
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+        }
         recordBtn.classList.remove('recording');
         recordBtn.title = "הקלטה";
+        
+        clearTimeout(recordTimeout);
+        clearInterval(recordInterval);
+        recordTimer.style.display = 'none';
     }
 
     // --- Event Listeners ---
@@ -1046,6 +1175,7 @@
     toggleControlsBtn.addEventListener('click', () => mainControls.classList.toggle('hidden'));
     toggleShapesBtn.addEventListener('click', () => shapeGallery.classList.toggle('hidden'));
     toggleMaterialsBtn.addEventListener('click', () => materialGallery.classList.toggle('hidden'));
+    toggleBottomControlsBtn.addEventListener('click', () => mainBottomControls.classList.toggle('hidden'));
     
     hueSlider.addEventListener('input', (e) => {
         const hueValue = parseFloat(e.target.value) / 360.0; // Normalize to 0-1
@@ -1054,6 +1184,13 @@
         }
         if (maskPlane && maskPlane.material.uniforms) {
             maskPlane.material.uniforms.u_hueShift.value = hueValue;
+        }
+    });
+    
+    darkenSlider.addEventListener('input', (e) => {
+        const darkenValue = parseFloat(e.target.value);
+        if (videoBackgroundPlane && videoBackgroundPlane.material.uniforms) {
+            videoBackgroundPlane.material.uniforms.u_darkenIntensity.value = darkenValue;
         }
     });
 

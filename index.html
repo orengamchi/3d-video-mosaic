@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
+  <!--
+    WOW CAM - Video Mosaic Effect
+    Copyright (c) 2025 Oren Gamchi. All Rights Reserved.
+    This code is proprietary and may not be copied, distributed, or used without express permission.
+  -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="mobile-web-app-capable" content="yes">
@@ -100,6 +105,32 @@
       }
       #main-controls, #main-bottom-controls {
         transform: scale(0.8);
+      }
+
+      /* New styles to prevent sidebar overlap */
+      #side-controls, #left-side-controls {
+        max-height: 50vh; /* Limit height to 50% of the viewport height */
+        overflow-y: auto;   /* Allow vertical scrolling */
+        overflow-x: hidden; /* Hide horizontal overflow */
+        background: rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        border-radius: 15px;
+        padding-top: 5px;
+        padding-bottom: 5px;
+      }
+
+      /* Optional: Hide scrollbar for a cleaner look */
+      #side-controls::-webkit-scrollbar, #left-side-controls::-webkit-scrollbar {
+          display: none;
+      }
+      #side-controls, #left-side-controls {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+      }
+
+      #shape-gallery, #material-gallery {
+        gap: 5px; /* Reduce space between buttons in the galleries */
       }
     }
 
@@ -243,6 +274,14 @@
     .shape-btn:hover, .material-btn:hover {
         background-color: rgba(255,255,255,0.1);
     }
+    
+    #toggleParticlesBtn.active {
+        border-color: #fff;
+        background-color: rgba(255,255,255,0.2);
+    }
+    #toggleParticlesBtn.active svg {
+        color: #fff;
+    }
 
     #recordBtn.recording {
         background-color: #ff4136;
@@ -319,7 +358,7 @@
         <div class="control-item-col">
             <span id="depthValue" class="slider-value"></span>
             <label for="depthSlider">עובי צורה</label>
-            <input type="range" id="depthSlider" min="0.1" max="50" value="10" step="0.5" title="עובי צורה">
+            <input type="range" id="depthSlider" min="0.1" max="100" value="66" step="0.5" title="עובי צורה">
         </div>
     </div>
   </div>
@@ -372,10 +411,15 @@
             <label for="hueSlider">גוון</label>
             <input type="range" id="hueSlider" min="0" max="360" value="0" title="שינוי גוון">
         </div>
-       <div class="control-item-col">
-            <label for="darkenSlider">החשכה</label>
-            <input type="range" id="darkenSlider" min="0" max="1" value="0" step="0.01" title="עוצמת החשכה">
-        </div>
+        <button id="toggleParticlesBtn" class="control-button" title="הפעל/כבה חלקיקים">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="1"></circle>
+                <circle cx="19" cy="5" r="1"></circle>
+                <circle cx="5" cy="19" r="1"></circle>
+                <circle cx="5" cy="5" r="1"></circle>
+                <circle cx="19" cy="19" r="1"></circle>
+            </svg>
+        </button>
       </div>
       <button id="toggleBottomControlsBtn" class="control-button" title="הצג/הסתר תפריט תחתון">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -396,8 +440,17 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
 
   <script>
+    /*
+     * WOW CAM - Video Mosaic Effect
+     * Copyright (c) 2025 Oren Gamchi. All Rights Reserved.
+     *
+     * This software is the confidential and proprietary information of Oren Gamchi.
+     * You shall not disclose such Confidential Information and shall use it only in
+     * accordance with the terms of the license agreement you entered into with Oren Gamchi.
+     */
+
     // --- Global Settings ---
-    let GRID_DENSITY = 15, EXPLOSION_FORCE = 8, SHAPE_DEPTH = 10, MOTION_THRESHOLD = 20;
+    let GRID_DENSITY = 15, EXPLOSION_FORCE = 8, SHAPE_DEPTH = 66, MOTION_THRESHOLD = 20;
     const RESTORE_SPEED = 0.05, DAMPING = 0.85;
     const ROTATION_FORCE = 0.2, ROTATIONAL_DAMPING = 0.95;
 
@@ -416,7 +469,7 @@
           recordBtn = document.getElementById('recordBtn'),
           recordTimer = document.getElementById('record-timer'),
           hueSlider = document.getElementById('hueSlider'),
-          darkenSlider = document.getElementById('darkenSlider'),
+          toggleParticlesBtn = document.getElementById('toggleParticlesBtn'),
           toggleBottomControlsBtn = document.getElementById('toggleBottomControlsBtn'),
           mainBottomControls = document.getElementById('main-bottom-controls'),
           densityValue = document.getElementById('densityValue'),
@@ -450,10 +503,13 @@
         lastSegmentationResults = null,
         videoTexture, videoBackgroundPlane = null, particleGroup,
         mediaRecorder, recordedChunks = [],
-        maskPlane = null, alphaTexture,
+        alphaTexture,
+        reflectionTexture,
         recordTimeout, recordInterval,
         originalRecordingState = null,
-        totalWorldWidth, totalWorldHeight;
+        totalWorldWidth, totalWorldHeight,
+        totalGridW, totalGridH,
+        particlesEnabled = false;
 
     // --- Physics & Particle System ---
     let physicsWorld;
@@ -461,7 +517,7 @@
     let fallingParticlesGroup;
     const MAX_FALLING_PARTICLES = 500;
     const PARTICLE_LIFESPAN = 1000; // 1 second in ms
-    const PARTICLE_SPAWN_RATE = 0.2; // Chance to spawn a particle per frame per grid cell
+    const PARTICLE_SPAWN_RATE = 0.01;
 
     // --- Three.js Setup ---
     const scene = new THREE.Scene();
@@ -488,6 +544,77 @@
     directionalLight.castShadow = true;
     camera.add(directionalLight);
     scene.add(camera);
+
+    // --- Frame Pattern Animation ---
+    const patterns = [
+        // Pattern 1: Radar Sweep
+        {
+            update: (shape, time) => {
+                if (!totalGridW) return;
+                const center = { x: totalGridW / 2, y: totalGridH / 2 };
+                const angle = (time * 0.0005) % (Math.PI * 2);
+                const dx = shape.userData.gridX - center.x;
+                const dy = shape.userData.gridY - center.y;
+                const shapeAngle = Math.atan2(dy, dx) + Math.PI;
+                
+                const angleDiff = Math.abs(angle - shapeAngle);
+                const inSweep = angleDiff < 0.1 || angleDiff > Math.PI * 2 - 0.1;
+
+                if (inSweep) {
+                    shape.material.color.setHSL( (time * 0.0001) % 1, 1, 0.5);
+                    shape.position.z = 20;
+                }
+            }
+        },
+        // Pattern 2: Expanding Circles
+        {
+            update: (shape, time) => {
+                if (!totalGridW) return;
+                const center = { x: totalGridW / 2, y: totalGridH / 2 };
+                const dx = shape.userData.gridX - center.x;
+                const dy = shape.userData.gridY - center.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                const wave = Math.sin(dist * 0.3 - time * 0.002);
+                if (wave > 0.95) {
+                    shape.material.color.setHSL( (dist / totalGridW) * 0.5, 1, 0.5);
+                    shape.position.z = 20 * wave;
+                }
+            }
+        },
+        // Pattern 3: Diagonal Wipe
+        {
+            update: (shape, time) => {
+                if (!totalGridW) return;
+                const wave = Math.sin((shape.userData.gridX + shape.userData.gridY) * 0.2 + time * 0.002);
+                 if (wave > 0.95) {
+                    shape.material.color.setHSL( (shape.userData.gridX / totalGridW), 1, 0.7);
+                    shape.position.z = 15;
+                }
+            }
+        },
+        // Pattern 4: Random Glitch
+        {
+            update: (shape, time) => {
+                if (Math.random() > 0.995) {
+                    shape.material.color.setHSL(Math.random(), 1, 0.7);
+                    shape.position.z = Math.random() * 30;
+                }
+            }
+        },
+        // Pattern 5: Checkerboard
+        {
+            update: (shape, time) => {
+                const isEven = ((shape.userData.gridX + shape.userData.gridY) % 2) === 0;
+                const phase = Math.floor(time / 1000) % 2;
+                if ((isEven && phase === 0) || (!isEven && phase === 1)) {
+                     shape.material.color.setHSL(0.6, 1, 0.6);
+                     shape.position.z = 10;
+                }
+            }
+        }
+    ];
+    let currentPatternIndex = 0;
 
     // --- MediaPipe Selfie Segmentation ---
     const selfieSegmentation = new SelfieSegmentation({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`});
@@ -650,12 +777,13 @@
         particleGroup.scale.x = (currentFacingMode === 'user') ? -1 : 1;
 
         if (videoBackgroundPlane) particleGroup.remove(videoBackgroundPlane);
-        if (maskPlane) particleGroup.remove(maskPlane);
         
-        const material = new THREE.MeshStandardMaterial(materials[currentMaterialKey]);
-        if (videoTexture && (currentMaterialKey === 'chrome' || currentMaterialKey === 'gold')) {
-            material.envMap = videoTexture;
+        const videoMaterial = new THREE.MeshStandardMaterial(materials[currentMaterialKey]);
+        
+        if (reflectionTexture && ['chrome', 'gold', 'glossy', 'crystal'].includes(currentMaterialKey)) {
+            videoMaterial.envMap = reflectionTexture;
         }
+
         const geometry = createGeometry();
         
         const borderSize = 10;
@@ -667,8 +795,8 @@
         segmentationCanvas.width = gridW;
         segmentationCanvas.height = gridH;
         
-        const totalGridW = gridW + borderSize * 2;
-        const totalGridH = gridH + borderSize * 2;
+        totalGridW = gridW + borderSize * 2;
+        totalGridH = gridH + borderSize * 2;
         totalWorldWidth = totalGridW * GRID_DENSITY;
         totalWorldHeight = totalGridH * GRID_DENSITY;
 
@@ -676,93 +804,9 @@
         
         const planeGeo = new THREE.PlaneGeometry(worldWidth, worldHeight);
         
-        const darkenValue = parseFloat(darkenSlider.value);
+        alphaTexture = new THREE.CanvasTexture(highResMaskCanvas);
 
         const videoEffectMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-                u_time: { value: 0.0 },
-                u_videoTexture: { value: videoTexture },
-                u_hueShift: { value: 0.0 },
-                u_darkenIntensity: { value: darkenValue }
-            },
-            vertexShader: `
-                varying vec2 vUv;
-                void main() {
-                    vUv = uv;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-            `,
-            fragmentShader: `
-                uniform float u_time;
-                uniform sampler2D u_videoTexture;
-                uniform float u_hueShift;
-                uniform float u_darkenIntensity;
-                varying vec2 vUv;
-
-                // HSL <-> RGB Functions
-                vec3 rgb2hsl(vec3 color) {
-                    float maxC = max(color.r, max(color.g, color.b));
-                    float minC = min(color.r, min(color.g, color.b));
-                    float h = 0.0, s = 0.0, l = (maxC + minC) / 2.0;
-
-                    if (maxC != minC) {
-                        float d = maxC - minC;
-                        s = l > 0.5 ? d / (2.0 - maxC - minC) : d / (maxC + minC);
-                        if (maxC == color.r) h = (color.g - color.b) / d + (color.g < color.b ? 6.0 : 0.0);
-                        else if (maxC == color.g) h = (color.b - color.r) / d + 2.0;
-                        else h = (color.r - color.g) / d + 4.0;
-                        h /= 6.0;
-                    }
-                    return vec3(h, s, l);
-                }
-
-                float hue2rgb(float p, float q, float t) {
-                    if (t < 0.0) t += 1.0;
-                    if (t > 1.0) t -= 1.0;
-                    if (t < 1.0/6.0) return p + (q - p) * 6.0 * t;
-                    if (t < 1.0/2.0) return q;
-                    if (t < 2.0/3.0) return p + (q - p) * (2.0/3.0 - t) * 6.0;
-                    return p;
-                }
-
-                vec3 hsl2rgb(vec3 hsl) {
-                    float h = hsl.x;
-                    float s = hsl.y;
-                    float l = hsl.z;
-                    if (s == 0.0) return vec3(l);
-                    float q = l < 0.5 ? l * (1.0 + s) : l + s - l * s;
-                    float p = 2.0 * l - q;
-                    return vec3(hue2rgb(p, q, h + 1.0/3.0), hue2rgb(p, q, h), hue2rgb(p, q, h - 1.0/3.0));
-                }
-
-                void main() {
-                    vec4 videoColor = texture2D(u_videoTexture, vUv);
-                    
-                    vec3 effectColor;
-                    effectColor.r = sin(vUv.x * 15.0 + u_time * 2.0) * 0.5 + 0.5;
-                    effectColor.g = sin(vUv.y * 15.0 + u_time * 1.5) * 0.5 + 0.5;
-                    effectColor.b = sin((vUv.x + vUv.y) * 15.0 + u_time) * 0.5 + 0.5;
-
-                    vec3 finalColor = videoColor.rgb + effectColor * 0.3;
-                    
-                    vec3 hsl = rgb2hsl(finalColor);
-                    hsl.x = mod(hsl.x + u_hueShift, 1.0);
-                    vec3 shiftedColor = hsl2rgb(hsl);
-                    
-                    vec3 finalDarkenedColor = shiftedColor * (1.0 - u_darkenIntensity);
-
-                    gl_FragColor = vec4(finalDarkenedColor, 1.0);
-                }
-            `,
-            side: THREE.FrontSide
-        });
-        videoBackgroundPlane = new THREE.Mesh(planeGeo, videoEffectMaterial);
-        videoBackgroundPlane.position.z = 0;
-        particleGroup.add(videoBackgroundPlane);
-
-        alphaTexture = new THREE.CanvasTexture(highResMaskCanvas);
-        
-        const maskEffectMaterial = new THREE.ShaderMaterial({
             uniforms: {
                 u_time: { value: 0.0 },
                 u_videoTexture: { value: videoTexture },
@@ -783,12 +827,10 @@
                 uniform float u_hueShift;
                 varying vec2 vUv;
 
-                // HSL <-> RGB Functions (same as above)
                 vec3 rgb2hsl(vec3 color) {
                     float maxC = max(color.r, max(color.g, color.b));
                     float minC = min(color.r, min(color.g, color.b));
                     float h = 0.0, s = 0.0, l = (maxC + minC) / 2.0;
-
                     if (maxC != minC) {
                         float d = maxC - minC;
                         s = l > 0.5 ? d / (2.0 - maxC - minC) : d / (maxC + minC);
@@ -810,9 +852,7 @@
                 }
 
                 vec3 hsl2rgb(vec3 hsl) {
-                    float h = hsl.x;
-                    float s = hsl.y;
-                    float l = hsl.z;
+                    float h = hsl.x; float s = hsl.y; float l = hsl.z;
                     if (s == 0.0) return vec3(l);
                     float q = l < 0.5 ? l * (1.0 + s) : l + s - l * s;
                     float p = 2.0 * l - q;
@@ -821,28 +861,21 @@
 
                 void main() {
                     vec4 videoColor = texture2D(u_videoTexture, vUv);
-                    float alpha = texture2D(u_alphaMap, vUv).r;
-                    
-                    vec3 effectColor;
-                    effectColor.r = sin(vUv.x * 15.0 + u_time * 2.0) * 0.5 + 0.5;
-                    effectColor.g = sin(vUv.y * 15.0 + u_time * 1.5) * 0.5 + 0.5;
-                    effectColor.b = sin((vUv.x + vUv.y) * 15.0 + u_time) * 0.5 + 0.5;
-
+                    float personMask = texture2D(u_alphaMap, vUv).r;
+                    vec3 effectColor = vec3(sin(vUv.x * 15.0 + u_time * 2.0), sin(vUv.y * 15.0 + u_time * 1.5), sin((vUv.x + vUv.y) * 15.0 + u_time)) * 0.5 + 0.5;
                     vec3 finalColor = videoColor.rgb + effectColor * 0.3;
-
                     vec3 hsl = rgb2hsl(finalColor);
                     hsl.x = mod(hsl.x + u_hueShift, 1.0);
                     vec3 shiftedColor = hsl2rgb(hsl);
-                    
-                    gl_FragColor = vec4(shiftedColor, alpha);
+                    gl_FragColor = vec4(shiftedColor, 1.0 - personMask);
                 }
             `,
             transparent: true,
-            side: THREE.BackSide
+            side: THREE.FrontSide
         });
-        maskPlane = new THREE.Mesh(planeGeo.clone(), maskEffectMaterial);
-        particleGroup.add(maskPlane);
-
+        videoBackgroundPlane = new THREE.Mesh(planeGeo, videoEffectMaterial);
+        videoBackgroundPlane.position.z = 0;
+        particleGroup.add(videoBackgroundPlane);
 
         for (let y = 0; y < totalGridH; y++) {
             for (let x = 0; x < totalGridW; x++) {
@@ -850,8 +883,13 @@
                 let originX = (x * GRID_DENSITY) - (totalWorldWidth / 2);
                 let originY = -(y * GRID_DENSITY) + (totalWorldHeight / 2);
                 
-                const shape = new THREE.Mesh(geometry.clone(), material.clone());
-                if (!isVideoShape) shape.material.color.set(0x1a1a1a);
+                let shape;
+                if (isVideoShape) {
+                    shape = new THREE.Mesh(geometry.clone(), videoMaterial.clone());
+                } else {
+                    const frameMaterial = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
+                    shape = new THREE.Mesh(geometry.clone(), frameMaterial);
+                }
 
                 shape.castShadow = true;
                 shape.receiveShadow = true;
@@ -861,7 +899,9 @@
                     velocity: new THREE.Vector3(0, 0, 0),
                     rotationalVelocity: new THREE.Vector3(0, 0, 0),
                     originalQuaternion: shape.quaternion.clone(),
-                    isVideoShape: isVideoShape
+                    isVideoShape: isVideoShape,
+                    gridX: x,
+                    gridY: y
                 };
 
                 if (isVideoShape) {
@@ -921,7 +961,7 @@
         }
     }
 
-    // --- Animation & Physics ---
+    // --- Main Animation Loop ---
     function animationLoop() {
       requestAnimationFrame(animationLoop);
       const time = Date.now();
@@ -950,9 +990,27 @@
       if (videoBackgroundPlane && videoBackgroundPlane.material.uniforms) {
           videoBackgroundPlane.material.uniforms.u_time.value = timeSeconds;
       }
-      if (maskPlane && maskPlane.material.uniforms) {
-          maskPlane.material.uniforms.u_time.value = timeSeconds;
+      
+      // Animate frame particles with moving patterns
+      // First, reset all frame shapes to a base color and position
+      for (const shape of shapes) {
+          if (!shape.userData.isVideoShape) {
+              shape.material.color.set(0x050515); // Dark blue/purple base
+              // Gently move back to origin Z
+              shape.position.z += (shape.userData.originPosition.z - shape.position.z) * 0.1;
+          }
       }
+
+      // Apply the current global pattern
+      const activePattern = patterns[currentPatternIndex];
+      if (activePattern) {
+          for (const shape of shapes) {
+              if (!shape.userData.isVideoShape) {
+                  activePattern.update(shape, time);
+              }
+          }
+      }
+
 
       // Update falling particles
       particlePool.forEach(particle => {
@@ -991,55 +1049,51 @@
     function updateSceneState() {
         if (!lastSegmentationResults || !alphaTexture) return;
 
-        highResMaskCtx.save();
         highResMaskCtx.clearRect(0, 0, highResMaskCanvas.width, highResMaskCanvas.height);
         highResMaskCtx.drawImage(lastSegmentationResults.segmentationMask, 0, 0, highResMaskCanvas.width, highResMaskCanvas.height);
-        highResMaskCtx.globalCompositeOperation = 'xor';
-        highResMaskCtx.fillStyle = 'white';
-        highResMaskCtx.fillRect(0, 0, highResMaskCanvas.width, highResMaskCanvas.height);
-        highResMaskCtx.restore();
         alphaTexture.needsUpdate = true;
 
-        segmentationCtx.save();
         segmentationCtx.clearRect(0, 0, segmentationCanvas.width, segmentationCanvas.height);
         segmentationCtx.drawImage(lastSegmentationResults.segmentationMask, 0, 0, segmentationCanvas.width, segmentationCanvas.height);
-        segmentationCtx.restore();
         const segmentationData = segmentationCtx.getImageData(0, 0, segmentationCanvas.width, segmentationCanvas.height).data;
 
-        offscreenCtx.save();
+        offscreenCtx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
         offscreenCtx.drawImage(video, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
-        offscreenCtx.restore();
         const currentFrameData = offscreenCtx.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height).data;
 
 
         for (const shape of shapes) {
-            if (!shape.userData.isVideoShape) continue;
-            
-            const dataIndex = shape.userData.dataIndex;
-            const isPerson = segmentationData[dataIndex] > 128; 
+            if (shape.userData.isVideoShape) { // Process all shapes in the video area
+                const dataIndex = shape.userData.dataIndex;
+                const isPerson = segmentationData[dataIndex] > 128;
+                shape.visible = isPerson; // Only person shapes are visible
 
-            shape.visible = isPerson;
-
-            if (isPerson) {
                 const r = currentFrameData[dataIndex];
                 const g = currentFrameData[dataIndex + 1];
                 const b = currentFrameData[dataIndex + 2];
                 const color = new THREE.Color(r / 255, g / 255, b / 255);
-                
-                if (currentMaterialKey !== 'gold') { 
-                    shape.material.color.set(color);
-                }
 
-                if (Math.random() < PARTICLE_SPAWN_RATE) {
-                    spawnParticle(shape.position.x, shape.position.y, shape.position.z, color);
-                }
-
-                if (prevFrameData) {
-                    const diff = Math.abs(r - prevFrameData[dataIndex]) + Math.abs(g - prevFrameData[dataIndex+1]) + Math.abs(b - prevFrameData[dataIndex+2]);
-                    if (diff > MOTION_THRESHOLD) {
-                        shape.userData.velocity.z += EXPLOSION_FORCE;
-                        shape.userData.rotationalVelocity.add(new THREE.Vector3((Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE));
+                if (isPerson) {
+                    if (currentMaterialKey !== 'gold') { 
+                        shape.material.color.set(color);
                     }
+                    if (prevFrameData) {
+                        const diff = Math.abs(r - prevFrameData[dataIndex]) + Math.abs(g - prevFrameData[dataIndex+1]) + Math.abs(b - prevFrameData[dataIndex+2]);
+                        if (diff > MOTION_THRESHOLD) {
+                            shape.userData.velocity.z += EXPLOSION_FORCE;
+                            shape.userData.rotationalVelocity.add(new THREE.Vector3((Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE, (Math.random()-0.5)*ROTATION_FORCE));
+                        }
+                    }
+                }
+
+                // Particle logic: spawn from ANY video shape (person or background) if enabled
+                if (particlesEnabled && Math.random() < PARTICLE_SPAWN_RATE) {
+                     const hueShift = parseFloat(hueSlider.value) / 360.0;
+                     const hsl = {};
+                     color.getHSL(hsl);
+                     hsl.h = (hsl.h + hueShift) % 1.0;
+                     const finalColor = new THREE.Color().setHSL(hsl.h, hsl.s, hsl.l);
+                     spawnParticle(shape.position.x, shape.position.y, shape.position.z, finalColor);
                 }
             }
         }
@@ -1182,16 +1236,11 @@
         if (videoBackgroundPlane && videoBackgroundPlane.material.uniforms) {
             videoBackgroundPlane.material.uniforms.u_hueShift.value = hueValue;
         }
-        if (maskPlane && maskPlane.material.uniforms) {
-            maskPlane.material.uniforms.u_hueShift.value = hueValue;
-        }
     });
     
-    darkenSlider.addEventListener('input', (e) => {
-        const darkenValue = parseFloat(e.target.value);
-        if (videoBackgroundPlane && videoBackgroundPlane.material.uniforms) {
-            videoBackgroundPlane.material.uniforms.u_darkenIntensity.value = darkenValue;
-        }
+    toggleParticlesBtn.addEventListener('click', () => {
+        particlesEnabled = !particlesEnabled;
+        toggleParticlesBtn.classList.toggle('active', particlesEnabled);
     });
 
     recordBtn.addEventListener('click', () => {
@@ -1229,6 +1278,27 @@
 
     // --- Main Initialization Function ---
     async function initialize() {
+        // ADDED: Load the reflection texture
+        const textureLoader = new THREE.TextureLoader();
+        textureLoader.setCrossOrigin("anonymous"); // Handle CORS for the image
+        textureLoader.load(
+            'https://i.imgur.com/M84v1Jx.jpeg', // A suitable equirectangular image
+            (texture) => {
+                texture.mapping = THREE.EquirectangularReflectionMapping;
+                reflectionTexture = texture;
+                initShapes(); // Re-initialize shapes to apply the new reflection map
+            },
+            undefined, // onProgress callback not needed
+            (err) => {
+                console.error('An error happened while loading the reflection texture.', err);
+            }
+        );
+
+        // ADDED: Switch pattern every 20 seconds
+        setInterval(() => {
+            currentPatternIndex = (currentPatternIndex + 1) % patterns.length;
+        }, 20000);
+
         initPhysics();
         createParticlePool();
         createFloor();

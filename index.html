@@ -132,6 +132,10 @@
       #shape-gallery, #material-gallery {
         gap: 5px; /* Reduce space between buttons in the galleries */
       }
+      
+      .signature {
+        bottom: 102px; /* Lift signatures on mobile to align with the center of the bottom button */
+      }
     }
 
     /* General button styling */
@@ -348,17 +352,17 @@
         <div class="control-item-col">
             <span id="densityValue" class="slider-value"></span>
             <label for="densitySlider">צפיפות</label>
-            <input type="range" id="densitySlider" min="5" max="35" value="25" title="צפיפות">
+            <input type="range" id="densitySlider" min="10" max="35" value="25" title="צפיפות - השתמש בזהירות">
         </div>
         <div class="control-item-col">
             <span id="forceValue" class="slider-value"></span>
             <label for="forceSlider">תזוזה</label>
-            <input type="range" id="forceSlider" min="1" max="50" value="8" step="1" title="תזוזה">
+            <input type="range" id="forceSlider" min="1" max="20" value="8" step="1" title="תזוזה - השתמש בזהירות">
         </div>
         <div class="control-item-col">
             <span id="depthValue" class="slider-value"></span>
             <label for="depthSlider">עובי צורה</label>
-            <input type="range" id="depthSlider" min="0.1" max="100" value="66" step="0.5" title="עובי צורה">
+            <input type="range" id="depthSlider" min="0.1" max="100" value="66" step="0.5" title="עובי צורה - השתמש בזהירות">
         </div>
     </div>
   </div>
@@ -375,8 +379,8 @@
       <div id="material-gallery" class="hidden">
           <button class="material-btn control-button" data-material="chrome" title="כרום"><svg viewBox="0 0 24 24"><path fill="currentColor" style="color: #c0c0c0;" d="M12 2A10 10 0 1 0 22 12A10 10 0 0 0 12 2m-4 6a1 1 0 0 1 1-1h6a1 1 0 0 1 0 2H9a1 1 0 0 1-1-1Z"/></svg></button>
           <button class="material-btn control-button" data-material="gold" title="זהב"><svg viewBox="0 0 24 24"><path fill="currentColor" style="color: #ffd700;" d="M12 2A10 10 0 1 0 22 12A10 10 0 0 0 12 2m-4 6a1 1 0 0 1 1-1h6a1 1 0 0 1 0 2H9a1 1 0 0 1-1-1Z"/></svg></button>
-          <button class="material-btn control-button active" data-material="matte" title="מט"><svg viewBox="0 0 24 24"><path fill="currentColor" style="color: #ffffff;" d="M12 2A10 10 0 1 0 22 12A10 10 0 0 0 12 2Z"></path></svg></button>
-          <button class="material-btn control-button" data-material="glossy" title="מבריק"><svg viewBox="0 0 24 24"><path fill="currentColor" style="color: #e0e0ff;" d="M12 2A10 10 0 1 0 22 12A10 10 0 0 0 12 2m-4 6a1 1 0 0 1 1-1h6a1 1 0 0 1 0 2H9a1 1 0 0 1-1-1Z"/></svg></button>
+          <button class="material-btn control-button" data-material="matte" title="מט"><svg viewBox="0 0 24 24"><path fill="currentColor" style="color: #ffffff;" d="M12 2A10 10 0 1 0 22 12A10 10 0 0 0 12 2Z"></path></svg></button>
+          <button class="material-btn control-button active" data-material="glossy" title="מבריק"><svg viewBox="0 0 24 24"><path fill="currentColor" style="color: #e0e0ff;" d="M12 2A10 10 0 1 0 22 12A10 10 0 0 0 12 2m-4 6a1 1 0 0 1 1-1h6a1 1 0 0 1 0 2H9a1 1 0 0 1-1-1Z"/></svg></button>
           <button class="material-btn control-button" data-material="crystal" title="קריסטל"><svg viewBox="0 0 24 24"><path fill="currentColor" style="color: #add8e6;" d="M12 2L2 12l10 10 10-12L12 2zm0 2.83L17.17 12 12 17.17 6.83 12 12 4.83z"/></svg></button>
       </div>
   </div>
@@ -394,12 +398,12 @@
           <button class="shape-btn control-button active" data-shape="box" title="קובייה"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4.5 4.5H19.5V19.5H4.5V4.5M6 6V18H18V6H6Z"></path></svg></button>
           <button class="shape-btn control-button" data-shape="sphere" title="כדור"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2A10 10 0 1 0 22 12A10 10 0 0 0 12 2Z"></path></svg></button>
           <button class="shape-btn control-button" data-shape="cone" title="חרוט"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2L4 22H20L12 2Z"></path></svg></button>
-          <button class="shape-btn control-button" data-shape="torus" title="טורוס"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 6A6 6 0 1 0 18 12A6 6 0 0 0 12 6M12 4A8 8 0 1 1 4 12A8 8 0 0 1 12 4Z"></path></svg></button>
+          <button class="shape-btn control-button" data-shape="hair" title="שיער"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M4 4 C8 0, 16 8, 20 4 M4 12 C8 8, 16 16, 20 12 M4 20 C8 16, 16 24, 20 20"/></svg></button>
           <button class="shape-btn control-button" data-shape="cylinder" title="גליל"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12,2C9.24,2 7,4.24 7,7V17C7,19.76 9.24,22 12,22C14.76,22 17,19.76 17,17V7C17,4.24 14.76,2 12,2Z"></path></svg></button>
           <button class="shape-btn control-button" data-shape="tetrahedron" title="פירמידה"><svg viewBox="0 0 24 24"><path fill="currentColor" d="m12 2l-10 18h20l-10-18zm0 4.63l5.18 9.37h-10.36l5.18-9.37z"></path></svg></button>
           <button class="shape-btn control-button" data-shape="octahedron" title="אוקטהדרון"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2L2 12L12 22L22 12L12 2Z"></path></svg></button>
-          <button class="shape-btn control-button" data-shape="dodecahedron" title="דודקהדרון"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.5L5.5 7L2 15.5L8.5 20L15.5 20L22 15.5L18.5 7L12 2.5Z"></path></svg></button>
-          <button class="shape-btn control-button" data-shape="icosahedron" title="איקוסהדרון"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 1L2 9L12 23L22 9L12 1Z"></path></svg></button>
+          <button class="shape-btn control-button" data-shape="spring" title="קפיץ"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M4 8 C4 4, 20 4, 20 8 S4 12, 20 12 S4 16, 20 16"/></svg></button>
+          <button class="shape-btn control-button" data-shape="hexagon" title="משושה"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44c-.16.09-.35.14-.54.14s-.38-.05-.54-.14l-7.9-4.44A.99.99 0 0 1 3 16.5v-9c0-.38.21-.71.53-.88l7.9-4.44c.16-.09.35-.14.54-.14s.38.05.54.14l7.9 4.44c.32.17.53.5.53.88v9z"/></svg></button>
           <button class="shape-btn control-button" data-shape="nail" title="מסמר"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M13.6 2.6L12.19 4L13.6 5.41L14.21 4.79L15.62 6.2L14.21 7.61L15.62 9L14.21 10.41L15.62 11.82L14.21 13.24L15.62 14.65L14.21 16.06L15.62 17.47L12.83 20.27L11.41 18.85L18.41 11.85L13.6 7.03L11.41 9.22L10 7.81L11.41 6.39L10 4.97L11.41 3.56L10 2.15L11.41 0.73L13.6 2.6Z"></path></svg></button>
       </div>
   </div>
@@ -408,8 +412,14 @@
   <div id="bottom-controls" class="control-panel">
       <div id="main-bottom-controls" class="hidden">
         <div class="control-item-col">
+            <span id="hueValue" class="slider-value"></span>
             <label for="hueSlider">גוון</label>
             <input type="range" id="hueSlider" min="0" max="360" value="0" title="שינוי גוון">
+        </div>
+        <div class="control-item-col">
+            <span id="lightIntensityValue" class="slider-value"></span>
+            <label for="lightIntensitySlider">עוצמת אור</label>
+            <input type="range" id="lightIntensitySlider" min="0" max="3" value="0.9" step="0.1" title="עוצמת אור">
         </div>
         <button id="toggleParticlesBtn" class="control-button" title="הפעל/כבה חלקיקים">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -474,7 +484,10 @@
           mainBottomControls = document.getElementById('main-bottom-controls'),
           densityValue = document.getElementById('densityValue'),
           forceValue = document.getElementById('forceValue'),
-          depthValue = document.getElementById('depthValue');
+          depthValue = document.getElementById('depthValue'),
+          lightIntensitySlider = document.getElementById('lightIntensitySlider'),
+          lightIntensityValue = document.getElementById('lightIntensityValue'),
+          hueValue = document.getElementById('hueValue');
     
     // --- Canvas & Contexts ---
     const segmentationCanvas = document.getElementById('segmentation-canvas');
@@ -486,18 +499,18 @@
 
     // --- Materials Definition ---
     const materials = {
-        chrome: { color: 0xffffff, metalness: 1.0, roughness: 0.1 },
-        gold: { color: 0xffd700, metalness: 0.8, roughness: 0.2 },
+        chrome: { color: 0xffffff, metalness: 1.0, roughness: 0.3 },
+        gold: { color: 0xffd700, metalness: 0.9, roughness: 0.4 },
         matte: { color: 0xffffff, metalness: 0.1, roughness: 0.8 },
-        glossy: { color: 0xffffff, metalness: 0.2, roughness: 0.1 },
-        crystal: { color: 0xffffff, metalness: 0.1, roughness: 0.0, transparent: true, opacity: 0.3, transmission: 0.95 }
+        glossy: { color: 0xffffff, metalness: 0.4, roughness: 0.3 },
+        crystal: { color: 0xffffff, metalness: 0.1, roughness: 0.1, transparent: true, opacity: 0.3, transmission: 0.95 }
     };
 
     // --- State Variables ---
     let shapes = [], currentStream, prevFrameData = null,
-        currentFacingMode = 'environment',
+        currentFacingMode = 'user',
         currentShape = 'box',
-        currentMaterialKey = 'matte',
+        currentMaterialKey = 'glossy',
         worldWidth, worldHeight, grid,
         isProcessing = false,
         lastSegmentationResults = null,
@@ -538,8 +551,8 @@
     controls.update();
 
     // --- Lighting ---
-    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.4);
+    scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
     directionalLight.position.set(20, 20, 50);
     directionalLight.castShadow = true;
     camera.add(directionalLight);
@@ -749,12 +762,52 @@
         switch(currentShape) {
             case 'sphere': return new THREE.SphereGeometry(size / 2, 16, 12);
             case 'cone': return new THREE.ConeGeometry(size / 2, size * 1.5, 20);
-            case 'torus': return new THREE.TorusGeometry(size * 0.3, size * 0.15, 16, 24);
+            case 'hair': {
+                const points = [];
+                const segments = 10;
+                const height = SHAPE_DEPTH * 1.5;
+                for (let i = 0; i <= segments; i++) {
+                    points.push(new THREE.Vector3(0, 0, (i / segments) * height - height / 2));
+                }
+                const curve = new THREE.CatmullRomCurve3(points);
+                const tubeGeo = new THREE.TubeGeometry(curve, 20, size * 0.1, 8, false);
+                tubeGeo.userData = { originalPositions: tubeGeo.attributes.position.clone() };
+                return tubeGeo;
+            }
             case 'cylinder': return new THREE.CylinderGeometry(size / 2, size / 2, SHAPE_DEPTH, 16);
             case 'tetrahedron': return new THREE.TetrahedronGeometry(size * 0.7);
             case 'octahedron': return new THREE.OctahedronGeometry(size * 0.6);
-            case 'dodecahedron': return new THREE.DodecahedronGeometry(size * 0.5);
-            case 'icosahedron': return new THREE.IcosahedronGeometry(size * 0.6);
+            case 'spring': {
+                const path = new THREE.CatmullRomCurve3(
+                    Array.from({ length: 100 }, (_, i) => {
+                        const t = i / 99;
+                        const angle = t * Math.PI * 8; // 4 full coils
+                        const radius = size * 0.3;
+                        const x = radius * Math.cos(angle);
+                        const y = radius * Math.sin(angle);
+                        const z = (t - 0.5) * SHAPE_DEPTH * 1.2;
+                        return new THREE.Vector3(x, y, z);
+                    })
+                );
+                const springGeo = new THREE.TubeGeometry(path, 64, size * 0.05, 8, false);
+                return springGeo;
+            }
+            case 'hexagon': {
+                const shape = new THREE.Shape();
+                const R = size * 0.6;
+                shape.moveTo(R * Math.cos(0), R * Math.sin(0));
+                for (let i = 1; i <= 6; i++) {
+                    shape.lineTo(R * Math.cos(i * 2 * Math.PI / 6), R * Math.sin(i * 2 * Math.PI / 6));
+                }
+                const extrudeSettings = {
+                    steps: 1,
+                    depth: SHAPE_DEPTH * 0.2, // Make hexagons flatter
+                    bevelEnabled: false,
+                };
+                const hexagonGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+                hexagonGeo.center(); // Center the geometry
+                return hexagonGeo;
+            }
             case 'nail':
                 const head = new THREE.CylinderGeometry(size * 0.4, size * 0.4, SHAPE_DEPTH * 0.1, 12);
                 head.translate(0, SHAPE_DEPTH * 0.5, 0);
@@ -877,6 +930,13 @@
         videoBackgroundPlane.position.z = 0;
         particleGroup.add(videoBackgroundPlane);
 
+        const frameMaterial = new THREE.MeshStandardMaterial({
+            color: 0x1a1a1a,
+            metalness: 0.8,
+            roughness: 0.1,
+            envMap: reflectionTexture
+        });
+
         for (let y = 0; y < totalGridH; y++) {
             for (let x = 0; x < totalGridW; x++) {
                 const isVideoShape = (x >= borderSize && x < gridW + borderSize && y >= borderSize && y < gridH + borderSize);
@@ -887,8 +947,7 @@
                 if (isVideoShape) {
                     shape = new THREE.Mesh(geometry.clone(), videoMaterial.clone());
                 } else {
-                    const frameMaterial = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
-                    shape = new THREE.Mesh(geometry.clone(), frameMaterial);
+                    shape = new THREE.Mesh(geometry.clone(), frameMaterial.clone());
                 }
 
                 shape.castShadow = true;
@@ -901,7 +960,9 @@
                     originalQuaternion: shape.quaternion.clone(),
                     isVideoShape: isVideoShape,
                     gridX: x,
-                    gridY: y
+                    gridY: y,
+                    isHair: currentShape === 'hair',
+                    isSpring: currentShape === 'spring'
                 };
 
                 if (isVideoShape) {
@@ -1011,6 +1072,35 @@
           }
       }
 
+      // Animate special shapes
+      for (const shape of shapes) {
+          if (shape.userData.isHair && shape.geometry.userData.originalPositions) {
+              const animTime = time * 0.005;
+              const positions = shape.geometry.attributes.position;
+              const originalPositions = shape.geometry.userData.originalPositions;
+              const vertex = new THREE.Vector3();
+              const originalVertex = new THREE.Vector3();
+
+              for (let i = 0; i < positions.count; i++) {
+                  originalVertex.fromBufferAttribute(originalPositions, i);
+                  
+                  const waveFactor = originalVertex.z * 0.1;
+                  const offsetX = Math.sin(waveFactor + animTime) * 2;
+                  const offsetY = Math.cos(waveFactor + animTime * 0.8) * 2;
+
+                  vertex.set(
+                      originalVertex.x + offsetX,
+                      originalVertex.y + offsetY,
+                      originalVertex.z
+                  );
+                  positions.setXYZ(i, vertex.x, vertex.y, vertex.z);
+              }
+              positions.needsUpdate = true;
+          }
+          if (shape.userData.isSpring) {
+              shape.rotation.z += 0.05;
+          }
+      }
 
       // Update falling particles
       particlePool.forEach(particle => {
@@ -1117,6 +1207,7 @@
         densityValue.textContent = (40 - parseInt(densitySlider.value));
         forceValue.textContent = forceSlider.value;
         depthValue.textContent = depthSlider.value;
+        if (lightIntensityValue) lightIntensityValue.textContent = parseFloat(lightIntensitySlider.value).toFixed(1);
     }
 
     // --- Recording ---
@@ -1236,6 +1327,13 @@
         if (videoBackgroundPlane && videoBackgroundPlane.material.uniforms) {
             videoBackgroundPlane.material.uniforms.u_hueShift.value = hueValue;
         }
+    });
+    
+    lightIntensitySlider.addEventListener('input', (e) => {
+        if (directionalLight) {
+            directionalLight.intensity = parseFloat(e.target.value);
+        }
+        updateSliderValues();
     });
     
     toggleParticlesBtn.addEventListener('click', () => {
